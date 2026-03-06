@@ -4,6 +4,7 @@
 + Christian Johnston
 
 ## Project Overview
+A persistent, distributed multiplayer server-based game of Battleship that manages turn-based game logic and player statistics through a secure REST API, functional with any number of players, with game records and statistics tracked and saved.
 
 ## Architecture
 + Frontend - hosted on Cloudfare, to be written in HTML and CSS in Phase 2
@@ -20,6 +21,10 @@
 ### Anthony Frialde
 + insert responsibilities here
 ### Christian Johnston
-+ insert responsibilities here
-## AI
-+ insert responsibilities here
++ Writing documentation and keeping it updated as the project evolves
++ Managing tasks and ensuring timely completion
++ Keeping project focused on speciic requirements
++ Preventing feature creep
+### AI
++ Writing boilerplate code
++ Evaluating and providing suggestions on human work
