@@ -6,6 +6,9 @@
 ## Project Overview
 
 ## Architecture
++ Frontend - hosted on Cloudfare, to be written in HTML and CSS in Phase 2
++ Server Backend - PHP, hosted on Render.com
++ Database - PostgreSQL, also hosted on Render.com
 
 ## API Description
 
