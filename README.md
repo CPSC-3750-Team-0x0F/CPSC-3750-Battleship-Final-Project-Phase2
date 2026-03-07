@@ -1,4 +1,4 @@
-# CPSC 3750 Final Project - Full-Stack Battleship
+# CPSC 3750 Final Project - Full-Stack Battleship (Phase 1)
 ## Team S. S. GPT
 + Anthony Frialde
 + Christian Johnston
