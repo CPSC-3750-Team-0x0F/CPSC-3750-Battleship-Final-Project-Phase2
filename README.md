@@ -12,6 +12,26 @@ A persistent, distributed multiplayer server-based game of Battleship that manag
 + Database - PostgreSQL, also hosted on Render.com
 
 ## API Description
+### GET
++ Retrieve Player Statistics
++ Retrieve Game State
++ Retrieve Move History
+
+### POST
++ Reset State
++ Create Player
++ Create New Game
++ Join Existing Game
++ Place Ships
++ Fire Shot at Opponent
++ Restart Game (test mode)
++ Deterministic Ship Placement (test mode)
++ Reveal Board State (test mode)
+
+### PUT
++ N/A
+### DELETE
++ N/A
 
 ## AI Tools
 + Chat GPT
