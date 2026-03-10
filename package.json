@@ -1,26 +1,17 @@
 {
   "name": "cpsc-3750-battleship-final-project-phase1",
   "version": "1.0.0",
-  "description": "+ Anthony Frialde\r + Christian Johnston",
-  "main": "index.js",
-  "directories": {
-    "doc": "docs"
-  },
+  "description": "Battleship API - Anthony Frialde & Christian Johnston",
+  "main": "src/server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node src/server.js"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/CPSC-3750-Team-0x0F/CPSC-3750-Battleship-Final-Project-Phase1.git"
+    "url": "https://github.com/CPSC-3750-Team-0x0F/CPSC-3750-Battleship-Final-Project-Phase1.git"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "type": "commonjs",
-  "bugs": {
-    "url": "https://github.com/CPSC-3750-Team-0x0F/CPSC-3750-Battleship-Final-Project-Phase1/issues"
-  },
-  "homepage": "https://github.com/CPSC-3750-Team-0x0F/CPSC-3750-Battleship-Final-Project-Phase1#readme",
+  "license": "ISC",
   "dependencies": {
     "body-parser": "^2.2.2",
     "cors": "^2.8.6",
