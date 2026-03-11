@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const testController = require('./testController');
+const testController = require("../controllers/testController");
 
 // Security Middleware: Checks for X-Test-Mode header
 const verifyTestMode = (req, res, next) => {
