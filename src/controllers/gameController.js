@@ -20,10 +20,10 @@ exports.createGame = async (req, res) => {
 
     const game_id = result.rows[0].game_id;
 
-    // Add creator to game_players
+    // creator joins first with turn_order = 0
     await db.query(
-      "INSERT INTO game_players(game_id, player_id) VALUES($1,$2)",
-      [game_id, creator_id]
+      "INSERT INTO game_players(game_id, player_id, turn_order) VALUES($1,$2,$3)",
+      [game_id, creator_id, 0]
     );
 
     res.status(201).json({ game_id });
@@ -43,7 +43,7 @@ exports.joinGame = async (req, res) => {
   }
 
   try {
-    // Check if game exists
+
     const game = await db.query(
       "SELECT * FROM games WHERE game_id=$1",
       [id]
@@ -53,9 +53,17 @@ exports.joinGame = async (req, res) => {
       return res.status(404).json({ error: "game not found" });
     }
 
+    // determine next turn order
+    const count = await db.query(
+      "SELECT COUNT(*) FROM game_players WHERE game_id=$1",
+      [id]
+    );
+
+    const turn_order = parseInt(count.rows[0].count);
+
     await db.query(
-      "INSERT INTO game_players(game_id, player_id) VALUES($1,$2)",
-      [id, player_id]
+      "INSERT INTO game_players(game_id, player_id, turn_order) VALUES($1,$2,$3)",
+      [id, player_id, turn_order]
     );
 
     res.status(200).json({ status: "joined" });
