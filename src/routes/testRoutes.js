@@ -11,16 +11,19 @@ const verifyTestMode = (req, res, next) => {
     next();
 };
 
-// POST /test/games/{gameId}/ships
-router.post('/games/:gameId/ships', verifyTestMode, testController.placeShips);
+// POST /api/test/games/{id}/ships
+// Note: Mounted at /api/test/games in server.js, so we use /:id/ships here
+router.post('/:id/ships', verifyTestMode, testController.placeShips);
 
-// GET /test/games/{gameId}/board
-router.get('/games/:gameId/board', verifyTestMode, testController.revealBoard);
+// GET /api/test/games/{id}/board/{player_id}
+// CHANGE: Added /:player_id to the path to match the contract requirements
+router.get('/:id/board/:player_id', verifyTestMode, testController.revealBoard);
 
-// POST /test/games/{gameId}/reset
-router.post('/games/:gameId/reset', verifyTestMode, testController.resetGame);
+// POST /api/test/games/{id}/reset
+// Side Effect: Clears ships/moves and resets status to 'waiting'
+router.post('/:id/reset', verifyTestMode, testController.resetGame);
 
-// POST /test/games/{gameId}/set-turn
-router.post('/games/:gameId/set-turn', verifyTestMode, testController.setTurn);
+// Custom helper route (not in contract, but useful for testing)
+router.post('/:id/set-turn', verifyTestMode, testController.setTurn);
 
 module.exports = router;
