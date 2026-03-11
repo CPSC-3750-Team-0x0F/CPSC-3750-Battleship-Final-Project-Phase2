@@ -3,24 +3,30 @@ const db = require("../db");
 exports.createGame = async (req, res) => {
   const { creator_id, grid_size, max_players } = req.body;
 
-  // Validate inputs
   if (!creator_id || !grid_size || !max_players) {
     return res.status(400).json({ error: "missing required fields" });
   }
 
-  // Grid size validation (required by autograder)
   if (grid_size < 5 || grid_size > 15) {
     return res.status(400).json({ error: "invalid grid size" });
   }
 
   try {
+
     const result = await db.query(
       "INSERT INTO games(creator_id, grid_size, max_players, status) VALUES($1,$2,$3,'waiting') RETURNING game_id",
       [creator_id, grid_size, max_players]
     );
 
-    // Must return 201 for autograder
-    res.status(201).json(result.rows[0]);
+    const game_id = result.rows[0].game_id;
+
+    // Add creator to game_players
+    await db.query(
+      "INSERT INTO game_players(game_id, player_id) VALUES($1,$2)",
+      [game_id, creator_id]
+    );
+
+    res.status(201).json({ game_id });
 
   } catch (err) {
     console.error(err);
