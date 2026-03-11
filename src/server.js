@@ -24,13 +24,12 @@ app.use("/test", testRoutes);
 
 app.post("/api/reset", async (req, res) => {
   try {
-    // clear all game related data
     await db.query("DELETE FROM moves");
     await db.query("DELETE FROM ships");
     await db.query("DELETE FROM game_players");
     await db.query("DELETE FROM games");
+    await db.query("DELETE FROM players");
 
-    // keep players intact
     res.status(200).json({ status: "reset" });
   } catch (err) {
     console.error(err);
