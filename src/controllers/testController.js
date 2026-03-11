@@ -1,62 +1,28 @@
 const db = require("../db");
 
-// POST /test/games/{gameId}/ships
+// POST /api/test/games/{id}/ships
+// Deterministic Ship Placement (used for grading during testing)
 exports.placeShips = async (req, res) => {
-  const { gameId } = req.params;
-  const { playerId, ships } = req.body;
+  const { id } = req.params; // Using 'id' to match standard route params
+  const { player_id, ships } = req.body; // Changed from playerId to player_id
 
-  if (!playerId || !ships) {
-    return res.status(400).json({ error: "Missing playerId or ships" });
+  if (!player_id || !ships) {
+    return res.status(400).json({ error: "Missing player_id or ships" });
   }
 
   try {
-
-    // get game info
-    const game = await db.query(
-      "SELECT grid_size, status FROM games WHERE game_id=$1",
-      [gameId]
-    );
-
-    if (game.rows.length === 0) {
-      return res.status(404).json({ error: "Game not found" });
-    }
-
-    const gridSize = game.rows[0].grid_size;
-
-    if (game.rows[0].status !== "waiting") {
-      return res.status(400).json({ error: "Game already started" });
-    }
-
+    // Contract Side Effect: Sets ship coordinates deterministically
+    // Overrides normal ship placement validation
     for (const ship of ships) {
-
-      for (const coord of ship.coordinates) {
-
-        const row = coord[0];
-        const col = coord[1];
-
-        // bounds check
-        if (row < 0 || col < 0 || row >= gridSize || col >= gridSize) {
-          return res.status(400).json({ error: "Invalid placement" });
-        }
-
-        // overlap check
-        const overlap = await db.query(
-          "SELECT * FROM ships WHERE game_id=$1 AND row=$2 AND col=$3",
-          [gameId, row, col]
-        );
-
-        if (overlap.rows.length > 0) {
-          return res.status(400).json({ error: "Overlap detected" });
-        }
-
-        await db.query(
-          "INSERT INTO ships(game_id, player_id, row, col) VALUES($1,$2,$3,$4)",
-          [gameId, playerId, row, col]
-        );
-      }
+      // The contract sends ships as { "row": 0, "col": 0 }, not a nested coordinates array
+      await db.query(
+        "INSERT INTO ships(game_id, player_id, row, col) VALUES($1, $2, $3, $4)",
+        [id, player_id, ship.row, ship.col]
+      );
     }
 
-    return res.status(200).json({ status: "ships placed" });
+    // Contract Response: {"status": "ships_set"}
+    return res.status(200).json({ status: "ships_set" });
 
   } catch (err) {
     console.error(err);
@@ -64,24 +30,24 @@ exports.placeShips = async (req, res) => {
   }
 };
 
-
-// GET /test/games/{gameId}/board
+// GET /api/test/games/{id}/board/{player_id}
+// Reveal Board State (used for grading during testing)
 exports.revealBoard = async (req, res) => {
-  const { gameId } = req.params;
-  const { playerId } = req.query;
+  const { id, player_id } = req.params; // Both are path parameters in the contract
 
   try {
-
     const ships = await db.query(
       "SELECT row, col FROM ships WHERE game_id=$1 AND player_id=$2",
-      [gameId, playerId]
+      [id, player_id]
     );
 
+    // Using row/col to match schema.sql and API Move History structure
     const moves = await db.query(
-      "SELECT x, y FROM moves WHERE game_id=$1",
-      [gameId]
+      "SELECT row, col, result FROM moves WHERE game_id=$1 AND player_id=$2",
+      [id, player_id]
     );
 
+    // Contract Response: { "ships": [...], "moves": [...] }
     return res.json({
       ships: ships.rows,
       moves: moves.rows
@@ -93,22 +59,24 @@ exports.revealBoard = async (req, res) => {
   }
 };
 
-
-// POST /test/games/{gameId}/reset
+// POST /api/test/games/{id}/reset
+// Restart Game (Used for grading during testing)
 exports.resetGame = async (req, res) => {
-  const { gameId } = req.params;
+  const { id } = req.params;
 
   try {
+    // Contract Side Effect: Clears all ships and moves from current game
+    await db.query("DELETE FROM ships WHERE game_id=$1", [id]);
+    await db.query("DELETE FROM moves WHERE game_id=$1", [id]);
 
-    await db.query("DELETE FROM ships WHERE game_id=$1", [gameId]);
-    await db.query("DELETE FROM moves WHERE game_id=$1", [gameId]);
-
+    // Contract Side Effect: Resets game status to 'waiting'
     await db.query(
-      "UPDATE games SET status='waiting' WHERE game_id=$1",
-      [gameId]
+      "UPDATE games SET status='waiting', current_turn_index=0 WHERE game_id=$1",
+      [id]
     );
 
-    return res.json({ status: "reset" });
+    // Contract Response: {"status": "game_restarted"}
+    return res.json({ status: "game_restarted" });
 
   } catch (err) {
     console.error(err);
@@ -116,17 +84,15 @@ exports.resetGame = async (req, res) => {
   }
 };
 
-
-// POST /test/games/{gameId}/set-turn
+// Note: setTurn is not in your current API Contract but can be kept for custom debugging.
 exports.setTurn = async (req, res) => {
-  const { gameId } = req.params;
-  const { playerId } = req.body;
+  const { id } = req.params;
+  const { player_id } = req.body;
 
   try {
-
     const player = await db.query(
       "SELECT turn_order FROM game_players WHERE game_id=$1 AND player_id=$2",
-      [gameId, playerId]
+      [id, player_id]
     );
 
     if (player.rows.length === 0) {
@@ -135,13 +101,13 @@ exports.setTurn = async (req, res) => {
 
     await db.query(
       "UPDATE games SET current_turn_index=$1 WHERE game_id=$2",
-      [player.rows[0].turn_order, gameId]
+      [player.rows[0].turn_order, id]
     );
 
     return res.json({ status: "turn set" });
 
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ error: "database error" });
+    res.status(500).json({ error: "database error" });
   }
 };
