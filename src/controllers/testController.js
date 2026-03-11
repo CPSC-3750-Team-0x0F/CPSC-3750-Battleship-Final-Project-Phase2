@@ -11,7 +11,7 @@ exports.placeShips = async (req, res) => {
 
   try {
 
-    // check game exists
+    // get game info
     const game = await db.query(
       "SELECT grid_size, status FROM games WHERE game_id=$1",
       [gameId]
@@ -23,30 +23,30 @@ exports.placeShips = async (req, res) => {
 
     const gridSize = game.rows[0].grid_size;
 
-    // only allow placement before game starts
     if (game.rows[0].status !== "waiting") {
       return res.status(400).json({ error: "Game already started" });
     }
 
     for (const ship of ships) {
+
       for (const coord of ship.coordinates) {
 
         const row = coord[0];
         const col = coord[1];
 
-        // bounds validation
+        // bounds check
         if (row < 0 || col < 0 || row >= gridSize || col >= gridSize) {
-          return res.status(400).json({ error: "Invalid ship placement" });
+          return res.status(400).json({ error: "Invalid placement" });
         }
 
-        // overlap validation
+        // overlap check
         const overlap = await db.query(
           "SELECT * FROM ships WHERE game_id=$1 AND row=$2 AND col=$3",
           [gameId, row, col]
         );
 
         if (overlap.rows.length > 0) {
-          return res.status(400).json({ error: "Ship overlap detected" });
+          return res.status(400).json({ error: "Overlap detected" });
         }
 
         await db.query(
