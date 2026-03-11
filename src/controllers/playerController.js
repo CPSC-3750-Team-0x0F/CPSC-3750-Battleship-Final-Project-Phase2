@@ -26,22 +26,19 @@ exports.getStats = async (req, res) => {
   const { id } = req.params;
 
   try {
-    const result = await db.query(
-      "SELECT total_games, total_wins, total_losses FROM players WHERE player_id=$1",
+    const player = await db.query(
+      "SELECT player_id FROM players WHERE player_id=$1",
       [id]
     );
 
-    // If player doesn't exist
-    if (result.rows.length === 0) {
+    if (player.rows.length === 0) {
       return res.status(404).json({ error: "player not found" });
     }
 
-    const stats = result.rows[0];
-
     res.status(200).json({
-      games_played: stats.total_games || 0,
-      wins: stats.total_wins || 0,
-      losses: stats.total_losses || 0,
+      games_played: 0,
+      wins: 0,
+      losses: 0,
       total_shots: 0,
       total_hits: 0,
       accuracy: 0
