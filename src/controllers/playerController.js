@@ -22,40 +22,38 @@ exports.createPlayer = async (req, res) => {
   }
 };
 
+// controllers/playerController.js update
 exports.getStats = async (req, res) => {
   const { id } = req.params;
 
   try {
-    const result = await db.query(
-      "SELECT games_played, wins, losses, total_shots, total_hits FROM players WHERE player_id=$1",
+    // Aggregating from moves and game_players tables ensures accuracy across identity reuse
+    const statsQuery = await db.query(`
+      SELECT 
+        (SELECT COUNT(*) FROM game_players WHERE player_id = $1) as games_played,
+        (SELECT COUNT(*) FROM moves WHERE player_id = $1) as total_shots,
+        (SELECT COUNT(*) FROM moves WHERE player_id = $1 AND result = 'hit') as total_hits
+      FROM players WHERE player_id = $1`, 
       [id]
     );
 
-    if (result.rows.length === 0) {
+    if (statsQuery.rows.length === 0) {
       return res.status(404).json({ error: "player not found" });
     }
 
-    const stats = result.rows[0];
-
-    // Use Coalesce or || 0 to handle potential nulls from the DB
-    const shots = stats.total_shots || 0;
-    const hits = stats.total_hits || 0;
-
-    const accuracy = shots > 0 
-      ? parseFloat((hits / shots).toFixed(3)) 
-      : 0.0;
+    const stats = statsQuery.rows[0];
+    const shots = parseInt(stats.total_shots);
+    const hits = parseInt(stats.total_hits);
+    const accuracy = shots > 0 ? parseFloat((hits / shots).toFixed(3)) : 0.0;
 
     res.status(200).json({
-      games_played: stats.games_played || 0,
-      wins: stats.wins || 0,
-      losses: stats.losses || 0,
+      player_id: id,
+      games_played: parseInt(stats.games_played),
       total_shots: shots,
       total_hits: hits,
       accuracy: accuracy
     });
-
   } catch (err) {
-    console.error("Get Stats Error:", err.message);
     res.status(500).json({ error: "database error" });
   }
 };
