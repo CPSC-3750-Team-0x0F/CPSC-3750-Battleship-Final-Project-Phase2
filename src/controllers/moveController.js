@@ -1,10 +1,10 @@
 const db = require("../db");
 
 /**
- * Requirement: Ship Placement Validation (Checkpoint B)
+ * Requirement: Ship Placement Validation (Checkpoint A & B)
  * - Validates exactly 3 ships.
- * - Checks for out-of-bounds coordinates.
- * - Checks for overlapping coordinates.
+ * - Checks for out-of-bounds coordinates based on grid_size.
+ * - Checks for overlapping coordinates within the request and the database.
  */
 exports.placeShips = async (req, res) => {
   const { id } = req.params;
@@ -12,25 +12,36 @@ exports.placeShips = async (req, res) => {
 
   // 1. Validate ship count
   if (!player_id || !ships || ships.length !== 3) {
-    return res.status(400).json({ error: "exactly 3 ships required" }); //
+    return res.status(400).json({ error: "exactly 3 ships required" });
   }
 
   try {
     // Get game info for boundary check
     const gameResult = await db.query("SELECT grid_size FROM games WHERE game_id = $1", [id]);
     if (gameResult.rows.length === 0) return res.status(404).json({ error: "game not found" });
-    const gridSize = gameResult.rows[0].grid_size; //
+    const gridSize = gameResult.rows[0].grid_size;
 
     await db.query('BEGIN');
+
+    // To catch overlaps within the incoming 'ships' array itself
+    const seenInRequest = new Set();
 
     for (const ship of ships) {
       // 2. Out-of-bounds validation
       if (ship.row < 0 || ship.row >= gridSize || ship.col < 0 || ship.col >= gridSize) {
         await db.query('ROLLBACK');
-        return res.status(400).json({ error: "ship coordinates out of bounds" }); //
+        return res.status(400).json({ error: "ship coordinates out of bounds" });
       }
 
-      // 3. Overlap validation
+      // 3. Overlap validation (Within Request)
+      const coordKey = `${ship.row},${ship.col}`;
+      if (seenInRequest.has(coordKey)) {
+        await db.query('ROLLBACK');
+        return res.status(400).json({ error: "overlapping ship coordinates in request" });
+      }
+      seenInRequest.add(coordKey);
+
+      // 4. Overlap validation (Against Database)
       const overlapCheck = await db.query(
         "SELECT 1 FROM ships WHERE game_id = $1 AND player_id = $2 AND row = $3 AND col = $4",
         [id, player_id, ship.row, ship.col]
@@ -43,12 +54,12 @@ exports.placeShips = async (req, res) => {
 
       await db.query(
         "INSERT INTO ships(game_id, player_id, row, col) VALUES($1, $2, $3, $4)",
-        [id, player_id, ship.row, ship.col] //
+        [id, player_id, ship.row, ship.col]
       );
     }
 
     await db.query('COMMIT');
-    res.status(200).json({ status: "ships_placed" }); //
+    res.status(200).json({ status: "ships_placed" });
 
   } catch (err) {
     await db.query('ROLLBACK');
