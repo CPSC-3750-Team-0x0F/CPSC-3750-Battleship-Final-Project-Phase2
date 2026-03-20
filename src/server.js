@@ -17,7 +17,7 @@ app.use("/api/games", moveRoutes);
 
 /* ---------------- TEST ROUTES ---------------- */
 // This mounts test routes under /api/test
-app.use("/api/test/games", testRoutes);
+app.use("/api/test", testRoutes);
 
 /* ---------------- SYSTEM RESET ---------------- */
 app.post("/api/reset", async (req, res) => {
