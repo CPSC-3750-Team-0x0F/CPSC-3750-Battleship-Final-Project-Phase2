@@ -5,7 +5,7 @@ const testController = require("../controllers/testController");
 // Security Middleware: Checks for X-Test-Mode header
 const verifyTestMode = (req, res, next) => {
     const TEST_PASSWORD = "clemson-test-2026"; 
-    if (req.headers['x-test-mode'] !== TEST_PASSWORD) {
+    if (req.headers['x-test-password'] !== TEST_PASSWORD) {
         return res.status(403).json({ error: "Forbidden: Invalid Test Mode Header" });
     }
     next();
