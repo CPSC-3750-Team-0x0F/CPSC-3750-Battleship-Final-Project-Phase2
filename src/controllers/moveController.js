@@ -102,7 +102,6 @@ exports.fireShot = async (req, res) => {
     // 2. Process the Shot
     await db.query('BEGIN');
     
-    // Check for a hit on ANY opponent
     const targetShip = await db.query(
       "SELECT * FROM ships WHERE game_id=$1 AND player_id != $2 AND row=$3 AND col=$4",
       [id, player_id, row, col]
@@ -115,7 +114,7 @@ exports.fireShot = async (req, res) => {
       [id, player_id, row, col, result]
     );
 
-    // 3. Update Turn (Cycle to next player)
+    // 3. Update Turn
     const nextTurnIndex = (parseInt(game.current_turn_index) + 1) % parseInt(game.max_players);
     await db.query("UPDATE games SET current_turn_index = $1 WHERE game_id = $2", [nextTurnIndex, id]);
 
@@ -142,7 +141,6 @@ exports.fireShot = async (req, res) => {
 
   } catch (err) {
     await db.query('ROLLBACK');
-    console.error("Fire Error:", err.message);
     res.status(500).json({ error: "database error" });
   }
 };
