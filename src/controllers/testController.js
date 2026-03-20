@@ -1,39 +1,50 @@
 const db = require("../db");
 
-// POST /api/test/games/{id}/ships
-// Deterministic Ship Placement (used for grading during testing)
+/**
+ * POST /api/test/games/{id}/ships
+ * Deterministic Ship Placement (used for grading during testing)
+ * Requirement: Test endpoint accepts deterministic ship placement — returns 200 or 201
+ */
 exports.placeShips = async (req, res) => {
-  const { id } = req.params; // Using 'id' to match standard route params
-  const { player_id, ships } = req.body; // Changed from playerId to player_id
+  const { id } = req.params; 
+  const { player_id, ships } = req.body; 
 
-  if (!player_id || !ships) {
-    return res.status(400).json({ error: "Missing player_id or ships" });
+  if (!player_id || !ships || !Array.isArray(ships)) {
+    return res.status(400).json({ error: "Missing player_id or ships array" });
   }
 
   try {
-    // Contract Side Effect: Sets ship coordinates deterministically
-    // Overrides normal ship placement validation
+    await db.query('BEGIN');
+
+    // Deterministic placement usually clears existing ships for that player first 
+    // to ensure the state is exactly what the test expects.
+    await db.query("DELETE FROM ships WHERE game_id=$1 AND player_id=$2", [id, player_id]);
+
     for (const ship of ships) {
-      // The contract sends ships as { "row": 0, "col": 0 }, not a nested coordinates array
       await db.query(
         "INSERT INTO ships(game_id, player_id, row, col) VALUES($1, $2, $3, $4)",
         [id, player_id, ship.row, ship.col]
       );
     }
 
-    // Contract Response: {"status": "ships_set"}
-    return res.status(200).json({ status: "ships_set" });
+    await db.query('COMMIT');
+
+    // Returning 201 to signify creation, which satisfies "200 or 201" requirement
+    return res.status(201).json({ status: "ships_set" });
 
   } catch (err) {
-    console.error(err);
+    await db.query('ROLLBACK');
+    console.error("Test Place Ships Error:", err.message);
     return res.status(500).json({ error: "database error" });
   }
 };
 
-// GET /api/test/games/{id}/board/{player_id}
-// Reveal Board State (used for grading during testing)
+/**
+ * GET /api/test/games/{id}/board/{player_id}
+ * Board reveal returns a non-empty response after ship placement
+ */
 exports.revealBoard = async (req, res) => {
-  const { id, player_id } = req.params; // Both are path parameters in the contract
+  const { id, player_id } = req.params;
 
   try {
     const ships = await db.query(
@@ -41,50 +52,57 @@ exports.revealBoard = async (req, res) => {
       [id, player_id]
     );
 
-    // Using row/col to match schema.sql and API Move History structure
     const moves = await db.query(
       "SELECT row, col, result FROM moves WHERE game_id=$1 AND player_id=$2",
       [id, player_id]
     );
 
-    // Contract Response: { "ships": [...], "moves": [...] }
-    return res.json({
+    // Requirement: Board reveal returns a non-empty response
+    return res.status(200).json({
       ships: ships.rows,
       moves: moves.rows
     });
 
   } catch (err) {
-    console.error(err);
+    console.error("Board Reveal Error:", err.message);
     return res.status(500).json({ error: "database error" });
   }
 };
 
-// POST /api/test/games/{id}/reset
-// Restart Game (Used for grading during testing)
+/**
+ * POST /api/test/games/{id}/reset
+ * Restart Game (Used for grading during testing)
+ */
 exports.resetGame = async (req, res) => {
   const { id } = req.params;
 
   try {
-    // Contract Side Effect: Clears all ships and moves from current game
+    await db.query('BEGIN');
+
+    // Clears all state for this specific game
     await db.query("DELETE FROM ships WHERE game_id=$1", [id]);
     await db.query("DELETE FROM moves WHERE game_id=$1", [id]);
 
-    // Contract Side Effect: Resets game status to 'waiting'
+    // Resets game status so players can place ships again
     await db.query(
       "UPDATE games SET status='waiting', current_turn_index=0 WHERE game_id=$1",
       [id]
     );
 
-    // Contract Response: {"status": "game_restarted"}
-    return res.json({ status: "game_restarted" });
+    await db.query('COMMIT');
+    return res.status(200).json({ status: "game_restarted" });
 
   } catch (err) {
-    console.error(err);
+    await db.query('ROLLBACK');
+    console.error("Reset Game Error:", err.message);
     return res.status(500).json({ error: "database error" });
   }
 };
 
-// Note: setTurn is not in your current API Contract but can be kept for custom debugging.
+/**
+ * Custom helper: setTurn
+ * Not strictly in the public 10-test suite but useful for logic testing
+ */
 exports.setTurn = async (req, res) => {
   const { id } = req.params;
   const { player_id } = req.body;
@@ -104,10 +122,10 @@ exports.setTurn = async (req, res) => {
       [player.rows[0].turn_order, id]
     );
 
-    return res.json({ status: "turn set" });
+    return res.json({ status: "turn set", current_turn_index: player.rows[0].turn_order });
 
   } catch (err) {
-    console.error(err);
+    console.error("Set Turn Error:", err.message);
     res.status(500).json({ error: "database error" });
   }
 };
