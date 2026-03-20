@@ -2,38 +2,29 @@ const db = require("../db");
 
 /**
  * Requirement: Ship Placement Validation (Checkpoint A & B)
- * - Validates exactly 3 ships.
- * - Checks for out-of-bounds coordinates based on grid_size.
- * - Checks for overlapping coordinates within the request and the database.
  */
 exports.placeShips = async (req, res) => {
   const { id } = req.params;
   const { player_id, ships } = req.body;
 
-  // 1. Validate ship count
   if (!player_id || !ships || ships.length !== 3) {
     return res.status(400).json({ error: "exactly 3 ships required" });
   }
 
   try {
-    // Get game info for boundary check
     const gameResult = await db.query("SELECT grid_size FROM games WHERE game_id = $1", [id]);
     if (gameResult.rows.length === 0) return res.status(404).json({ error: "game not found" });
     const gridSize = gameResult.rows[0].grid_size;
 
     await db.query('BEGIN');
-
-    // To catch overlaps within the incoming 'ships' array itself
     const seenInRequest = new Set();
 
     for (const ship of ships) {
-      // 2. Out-of-bounds validation
       if (ship.row < 0 || ship.row >= gridSize || ship.col < 0 || ship.col >= gridSize) {
         await db.query('ROLLBACK');
         return res.status(400).json({ error: "ship coordinates out of bounds" });
       }
 
-      // 3. Overlap validation (Within Request)
       const coordKey = `${ship.row},${ship.col}`;
       if (seenInRequest.has(coordKey)) {
         await db.query('ROLLBACK');
@@ -41,7 +32,6 @@ exports.placeShips = async (req, res) => {
       }
       seenInRequest.add(coordKey);
 
-      // 4. Overlap validation (Against Database)
       const overlapCheck = await db.query(
         "SELECT 1 FROM ships WHERE game_id = $1 AND player_id = $2 AND row = $3 AND col = $4",
         [id, player_id, ship.row, ship.col]
@@ -63,21 +53,19 @@ exports.placeShips = async (req, res) => {
 
   } catch (err) {
     await db.query('ROLLBACK');
-    console.error("Place Ships Error:", err.message);
     res.status(500).json({ error: "database error" });
   }
 };
 
 /**
- * Requirement: Fire Gating (Checkpoint B)
- * - Rejects shots if all players have not placed their ships.
+ * Requirement: Fire Gating & Logic (Checkpoint B)
  */
 exports.fireShot = async (req, res) => {
   const { id } = req.params;
   const { player_id, row, col } = req.body;
 
   try {
-    // 1. Fire Gating: Ensure all players (max_players * 3 ships) have placed ships
+    // 1. Fire Gating: Count total ships in game against required total
     const gameSetup = await db.query(
       "SELECT max_players, (SELECT COUNT(*) FROM ships WHERE game_id = $1) as ships_placed FROM games WHERE game_id = $1",
       [id]
@@ -99,16 +87,14 @@ exports.fireShot = async (req, res) => {
       [id, player_id]
     );
 
-    if (gameQuery.rows.length === 0) {
-      return res.status(403).json({ error: "player not in this game" });
-    }
+    if (gameQuery.rows.length === 0) return res.status(403).json({ error: "player not in this game" });
 
     const game = gameQuery.rows[0];
-    if (game.status !== 'active' || game.current_turn_index !== game.turn_order) {
+    if (game.status !== 'active' || parseInt(game.current_turn_index) !== parseInt(game.turn_order)) {
       return res.status(400).json({ error: "not your turn or game not active" });
     }
 
-    // 3. Execution: Process the shot
+    // 3. Process Shot
     await db.query('BEGIN');
     const targetShip = await db.query(
       "SELECT * FROM ships WHERE game_id=$1 AND player_id != $2 AND row=$3 AND col=$4",
@@ -116,17 +102,16 @@ exports.fireShot = async (req, res) => {
     );
 
     const result = targetShip.rows.length > 0 ? "hit" : "miss";
-
     await db.query(
       "INSERT INTO moves(game_id, player_id, row, col, result) VALUES($1, $2, $3, $4, $5)",
       [id, player_id, row, col, result]
     );
 
-    // 4. Update Turn Index
+    // 4. Update Turn
     const nextTurnIndex = (game.current_turn_index + 1) % game.max_players;
     await db.query("UPDATE games SET current_turn_index = $1 WHERE game_id = $2", [nextTurnIndex, id]);
 
-    // 5. Win Condition Check
+    // 5. Win Condition
     let gameStatus = 'active';
     if (result === "hit") {
       const remainingShips = await db.query(
@@ -135,8 +120,7 @@ exports.fireShot = async (req, res) => {
          AND NOT EXISTS (
             SELECT 1 FROM moves m 
             WHERE m.game_id = s.game_id AND m.row = s.row AND m.col = s.col AND m.result = 'hit'
-         )`,
-        [id, player_id]
+         )`, [id, player_id]
       );
 
       if (parseInt(remainingShips.rows[0].count) === 0) {
@@ -146,16 +130,10 @@ exports.fireShot = async (req, res) => {
     }
 
     await db.query('COMMIT');
-
-    res.json({
-      result: result,
-      next_player_id: null,
-      game_status: gameStatus
-    });
+    res.json({ result, next_player_id: null, game_status: gameStatus });
 
   } catch (err) {
     await db.query('ROLLBACK');
-    console.error("Fire Shot Error:", err.message);
     res.status(500).json({ error: "database error" });
   }
 };
