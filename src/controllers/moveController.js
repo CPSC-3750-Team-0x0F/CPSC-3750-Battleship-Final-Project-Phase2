@@ -65,56 +65,64 @@ exports.fireShot = async (req, res) => {
   const { player_id, row, col } = req.body;
 
   try {
-    // 1. Fire Gating: Count total ships in game against required total
-    const gameSetup = await db.query(
-      "SELECT max_players, (SELECT COUNT(*) FROM ships WHERE game_id = $1) as ships_placed FROM games WHERE game_id = $1",
-      [id]
-    );
-
-    if (gameSetup.rows.length === 0) return res.status(404).json({ error: "game not found" });
-
-    const { max_players, ships_placed } = gameSetup.rows[0];
-    if (parseInt(ships_placed) < (max_players * 3)) {
-      return res.status(400).json({ error: "firing not allowed until all ships are placed" });
-    }
-
-    // 2. Identity & Turn Validation
+    // 1. Fetch Game and Player Info in one query to ensure consistency
     const gameQuery = await db.query(
-      `SELECT g.*, gp.turn_order 
+      `SELECT g.*, gp.turn_order,
+      (SELECT COUNT(*) FROM ships WHERE game_id = $1) as total_ships_in_game
        FROM games g 
-       JOIN game_players gp ON g.game_id = gp.game_id
-       WHERE g.game_id = $1 AND gp.player_id = $2`,
+       LEFT JOIN game_players gp ON g.game_id = gp.game_id AND gp.player_id = $2
+       WHERE g.game_id = $1`,
       [id, player_id]
     );
 
-    if (gameQuery.rows.length === 0) return res.status(403).json({ error: "player not in this game" });
+    if (gameQuery.rows.length === 0) return res.status(404).json({ error: "game not found" });
 
     const game = gameQuery.rows[0];
-    if (game.status !== 'active' || parseInt(game.current_turn_index) !== parseInt(game.turn_order)) {
-      return res.status(400).json({ error: "not your turn or game not active" });
+    const totalShipsRequired = parseInt(game.max_players) * 3;
+
+    // --- FIRE GATING ---
+    if (parseInt(game.total_ships_in_game) < totalShipsRequired) {
+      return res.status(400).json({ error: "All players must place 3 ships before firing." });
     }
 
-    // 3. Process Shot
+    // --- IDENTITY CHECK ---
+    if (game.turn_order === null) {
+      return res.status(403).json({ error: "player not in this game" });
+    }
+
+    // --- TURN & STATUS CHECK ---
+    if (game.status.toLowerCase() !== 'active') {
+      return res.status(400).json({ error: `Game is not active (current status: ${game.status})` });
+    }
+
+    if (parseInt(game.current_turn_index) !== parseInt(game.turn_order)) {
+      return res.status(400).json({ error: "not your turn" });
+    }
+
+    // 2. Process the Shot
     await db.query('BEGIN');
+    
+    // Check for a hit on ANY opponent
     const targetShip = await db.query(
       "SELECT * FROM ships WHERE game_id=$1 AND player_id != $2 AND row=$3 AND col=$4",
       [id, player_id, row, col]
     );
 
     const result = targetShip.rows.length > 0 ? "hit" : "miss";
+
     await db.query(
       "INSERT INTO moves(game_id, player_id, row, col, result) VALUES($1, $2, $3, $4, $5)",
       [id, player_id, row, col, result]
     );
 
-    // 4. Update Turn
-    const nextTurnIndex = (game.current_turn_index + 1) % game.max_players;
+    // 3. Update Turn (Cycle to next player)
+    const nextTurnIndex = (parseInt(game.current_turn_index) + 1) % parseInt(game.max_players);
     await db.query("UPDATE games SET current_turn_index = $1 WHERE game_id = $2", [nextTurnIndex, id]);
 
-    // 5. Win Condition
+    // 4. Win Condition
     let gameStatus = 'active';
     if (result === "hit") {
-      const remainingShips = await db.query(
+      const remainingOpponentShips = await db.query(
         `SELECT COUNT(*) FROM ships s
          WHERE s.game_id = $1 AND s.player_id != $2
          AND NOT EXISTS (
@@ -123,7 +131,7 @@ exports.fireShot = async (req, res) => {
          )`, [id, player_id]
       );
 
-      if (parseInt(remainingShips.rows[0].count) === 0) {
+      if (parseInt(remainingOpponentShips.rows[0].count) === 0) {
         gameStatus = 'completed';
         await db.query("UPDATE games SET status = 'completed' WHERE game_id = $1", [id]);
       }
@@ -134,6 +142,7 @@ exports.fireShot = async (req, res) => {
 
   } catch (err) {
     await db.query('ROLLBACK');
+    console.error("Fire Error:", err.message);
     res.status(500).json({ error: "database error" });
   }
 };
