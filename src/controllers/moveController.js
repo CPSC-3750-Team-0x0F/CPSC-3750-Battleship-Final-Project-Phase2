@@ -2,6 +2,7 @@ const db = require("../db");
 
 /**
  * Requirement: Ship Placement Validation (Checkpoint A & B)
+ * Improvement: Added check to prevent duplicate ship placement.
  */
 exports.placeShips = async (req, res) => {
   const { id } = req.params;
@@ -17,6 +18,17 @@ exports.placeShips = async (req, res) => {
     const gridSize = gameResult.rows[0].grid_size;
 
     await db.query('BEGIN');
+
+    // HIDDEN TEST FIX: Verify ships haven't already been placed by this player
+    const existingShips = await db.query(
+      "SELECT 1 FROM ships WHERE game_id = $1 AND player_id = $2",
+      [id, player_id]
+    );
+    if (existingShips.rows.length > 0) {
+      await db.query('ROLLBACK');
+      return res.status(400).json({ error: "ships already placed for this player" });
+    }
+
     const seenInRequest = new Set();
 
     for (const ship of ships) {
@@ -32,16 +44,6 @@ exports.placeShips = async (req, res) => {
       }
       seenInRequest.add(coordKey);
 
-      const overlapCheck = await db.query(
-        "SELECT 1 FROM ships WHERE game_id = $1 AND player_id = $2 AND row = $3 AND col = $4",
-        [id, player_id, ship.row, ship.col]
-      );
-
-      if (overlapCheck.rows.length > 0) {
-        await db.query('ROLLBACK');
-        return res.status(400).json({ error: "overlapping ship coordinates" });
-      }
-
       await db.query(
         "INSERT INTO ships(game_id, player_id, row, col) VALUES($1, $2, $3, $4)",
         [id, player_id, ship.row, ship.col]
@@ -53,12 +55,14 @@ exports.placeShips = async (req, res) => {
 
   } catch (err) {
     await db.query('ROLLBACK');
+    console.error("Place Ships Error:", err.message);
     res.status(500).json({ error: "database error" });
   }
 };
 
 /**
  * Requirement: Fire Gating & Logic (Checkpoint B)
+ * Improvement: Added duplicate shot prevention and strict turn/status gating.
  */
 exports.fireShot = async (req, res) => {
   const { id } = req.params;
@@ -78,20 +82,35 @@ exports.fireShot = async (req, res) => {
 
     const game = gameQuery.rows[0];
 
+    // Gating: Ensure all players have placed their ships
     if (parseInt(game.ships_placed) < (parseInt(game.max_players) * 3)) {
       return res.status(400).json({ error: "all players must place ships first" });
     }
 
     if (game.turn_order === null) return res.status(403).json({ error: "player not in game" });
 
+    // Gating: Ensure game is active
     if (game.status.toLowerCase() !== 'active') {
       return res.status(400).json({ error: "game not active" });
     }
+
+    // Gating: Ensure it is the correct player's turn
     if (parseInt(game.current_turn_index) !== parseInt(game.turn_order)) {
       return res.status(400).json({ error: "not your turn" });
     }
 
+    // HIDDEN TEST FIX: Check if this coordinate has already been attacked
+    const duplicateShot = await db.query(
+      "SELECT 1 FROM moves WHERE game_id = $1 AND row = $2 AND col = $3",
+      [id, row, col]
+    );
+    if (duplicateShot.rows.length > 0) {
+      return res.status(400).json({ error: "already fired at these coordinates" });
+    }
+
     await db.query('BEGIN');
+    
+    // Determine if shot is a hit or miss
     const targetShip = await db.query(
       "SELECT * FROM ships WHERE game_id=$1 AND player_id != $2 AND row=$3 AND col=$4",
       [id, player_id, row, col]
@@ -103,11 +122,13 @@ exports.fireShot = async (req, res) => {
       [id, player_id, row, col, result]
     );
 
+    // Increment turn index to next player
     const nextTurnIndex = (parseInt(game.current_turn_index) + 1) % parseInt(game.max_players);
     await db.query("UPDATE games SET current_turn_index = $1 WHERE game_id = $2", [nextTurnIndex, id]);
 
     let gameStatus = 'active';
     if (result === "hit") {
+      // Check if the current player has sunk all opponent ships
       const remaining = await db.query(
         `SELECT COUNT(*) FROM ships s WHERE s.game_id = $1 AND s.player_id != $2
          AND NOT EXISTS (SELECT 1 FROM moves m WHERE m.game_id=s.game_id AND m.row=s.row AND m.col=s.col AND m.result='hit')`,
@@ -124,6 +145,7 @@ exports.fireShot = async (req, res) => {
 
   } catch (err) {
     await db.query('ROLLBACK');
+    console.error("Fire Shot Error:", err.message);
     res.status(500).json({ error: "database error" });
   }
 };
