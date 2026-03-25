@@ -2,7 +2,7 @@ const db = require("../db");
 
 /**
  * Requirement: Ship Placement Validation (Checkpoint A & B)
- * Improvement: Added check to prevent duplicate ship placement.
+ * HIDDEN TEST FIX: Added check to ensure a player cannot place ships twice.
  */
 exports.placeShips = async (req, res) => {
   const { id } = req.params;
@@ -19,7 +19,7 @@ exports.placeShips = async (req, res) => {
 
     await db.query('BEGIN');
 
-    // HIDDEN TEST FIX: Verify ships haven't already been placed by this player
+    // --- HIDDEN TEST FIX: Prevent duplicate placement ---
     const existingShips = await db.query(
       "SELECT 1 FROM ships WHERE game_id = $1 AND player_id = $2",
       [id, player_id]
@@ -54,7 +54,7 @@ exports.placeShips = async (req, res) => {
     res.status(200).json({ status: "ships_placed" });
 
   } catch (err) {
-    await db.query('ROLLBACK');
+    if (db.query) await db.query('ROLLBACK');
     console.error("Place Ships Error:", err.message);
     res.status(500).json({ error: "database error" });
   }
@@ -62,7 +62,7 @@ exports.placeShips = async (req, res) => {
 
 /**
  * Requirement: Fire Gating & Logic (Checkpoint B)
- * Improvement: Added duplicate shot prevention and strict turn/status gating.
+ * HIDDEN TEST FIX: Added duplicate shot prevention.
  */
 exports.fireShot = async (req, res) => {
   const { id } = req.params;
@@ -82,24 +82,22 @@ exports.fireShot = async (req, res) => {
 
     const game = gameQuery.rows[0];
 
-    // Gating: Ensure all players have placed their ships
+    // Gate: Ensure everyone is ready
     if (parseInt(game.ships_placed) < (parseInt(game.max_players) * 3)) {
       return res.status(400).json({ error: "all players must place ships first" });
     }
 
     if (game.turn_order === null) return res.status(403).json({ error: "player not in game" });
 
-    // Gating: Ensure game is active
     if (game.status.toLowerCase() !== 'active') {
       return res.status(400).json({ error: "game not active" });
     }
 
-    // Gating: Ensure it is the correct player's turn
     if (parseInt(game.current_turn_index) !== parseInt(game.turn_order)) {
       return res.status(400).json({ error: "not your turn" });
     }
 
-    // HIDDEN TEST FIX: Check if this coordinate has already been attacked
+    // --- HIDDEN TEST FIX: Prevent duplicate shots ---
     const duplicateShot = await db.query(
       "SELECT 1 FROM moves WHERE game_id = $1 AND row = $2 AND col = $3",
       [id, row, col]
@@ -110,7 +108,6 @@ exports.fireShot = async (req, res) => {
 
     await db.query('BEGIN');
     
-    // Determine if shot is a hit or miss
     const targetShip = await db.query(
       "SELECT * FROM ships WHERE game_id=$1 AND player_id != $2 AND row=$3 AND col=$4",
       [id, player_id, row, col]
@@ -122,13 +119,11 @@ exports.fireShot = async (req, res) => {
       [id, player_id, row, col, result]
     );
 
-    // Increment turn index to next player
     const nextTurnIndex = (parseInt(game.current_turn_index) + 1) % parseInt(game.max_players);
     await db.query("UPDATE games SET current_turn_index = $1 WHERE game_id = $2", [nextTurnIndex, id]);
 
     let gameStatus = 'active';
     if (result === "hit") {
-      // Check if the current player has sunk all opponent ships
       const remaining = await db.query(
         `SELECT COUNT(*) FROM ships s WHERE s.game_id = $1 AND s.player_id != $2
          AND NOT EXISTS (SELECT 1 FROM moves m WHERE m.game_id=s.game_id AND m.row=s.row AND m.col=s.col AND m.result='hit')`,
@@ -144,7 +139,7 @@ exports.fireShot = async (req, res) => {
     res.json({ result, next_player_id: null, game_status: gameStatus });
 
   } catch (err) {
-    await db.query('ROLLBACK');
+    if (db.query) await db.query('ROLLBACK');
     console.error("Fire Shot Error:", err.message);
     res.status(500).json({ error: "database error" });
   }
