@@ -12,7 +12,6 @@ exports.createGame = async (req, res) => {
   }
 
   try {
-    // Start a transaction to ensure both game and game_players are created
     await db.query('BEGIN');
 
     const result = await db.query(
@@ -35,87 +34,54 @@ exports.createGame = async (req, res) => {
       status: game.status,
       current_turn_index: game.current_turn_index
     });
-
   } catch (err) {
     await db.query('ROLLBACK');
-    console.error("Create Game Error:", err.message);
     res.status(500).json({ error: "database error" });
   }
 };
 
-// controllers/gameController.js
-
 exports.joinGame = async (req, res) => {
-  const { id } = req.params; // game_id from URL
+  const { id } = req.params;
   const { player_id } = req.body;
 
-  if (!player_id) {
-    return res.status(400).json({ error: "player_id is required" });
-  }
+  if (!player_id) return res.status(400).json({ error: "player_id required" });
 
   try {
-    // 1. REJECT FAKE PLAYER ID [Checkpoint B Requirement]
-    // Check if the player actually exists in the global players table
-    const playerExists = await db.query(
-      "SELECT 1 FROM players WHERE player_id = $1", 
-      [player_id]
-    );
-    if (playerExists.rows.length === 0) {
-      return res.status(404).json({ error: "Player does not exist" });
-    }
-
-    // 2. CHECK GAME STATUS & CAPACITY
-    const gameResult = await db.query(
-      "SELECT status, max_players, grid_size FROM games WHERE game_id = $1",
-      [id]
-    );
-
-    if (gameResult.rows.length === 0) {
-      return res.status(404).json({ error: "Game not found" });
-    }
-
-    const game = gameResult.rows[0];
-
-    if (game.status !== 'waiting') {
-      return res.status(400).json({ error: "Game is already active or completed" });
-    }
-
-    // 3. IDENTITY ENFORCEMENT [Checkpoint B Requirement]
-    // Prevent the same player from joining the same game twice
-    const alreadyInGame = await db.query(
-      "SELECT 1 FROM game_players WHERE game_id = $1 AND player_id = $2",
-      [id, player_id]
-    );
-    if (alreadyInGame.rows.length > 0) {
-      return res.status(400).json({ error: "Player already in this game" });
-    }
-
-    // 4. CHECK CURRENT PLAYER COUNT
-    const countResult = await db.query(
-      "SELECT COUNT(*) FROM game_players WHERE game_id = $1",
-      [id]
-    );
-    const currentCount = parseInt(countResult.rows[0].count);
-
-    if (currentCount >= game.max_players) {
-      return res.status(400).json({ error: "Game is full" });
-    }
-
-    // 5. ATOMIC JOIN [Checkpoint B: Lifecycle Correctness]
     await db.query('BEGIN');
 
-    // Assign turn_order based on current count (0-indexed)
+    // 1. Lock the game record to prevent race conditions during join
+    const gameRes = await db.query("SELECT * FROM games WHERE game_id = $1 FOR UPDATE", [id]);
+    if (gameRes.rows.length === 0) {
+      await db.query('ROLLBACK');
+      return res.status(404).json({ error: "game not found" });
+    }
+    const game = gameRes.rows[0];
+
+    // 2. Check current player count
+    const countRes = await db.query("SELECT COUNT(*) FROM game_players WHERE game_id = $1", [id]);
+    const currentCount = parseInt(countRes.rows[0].count);
+
+    if (currentCount >= game.max_players) {
+      await db.query('ROLLBACK');
+      return res.status(400).json({ error: "game full" }); // Meets requirement for 400 or 409
+    }
+
+    // 3. Check if the player has already joined
+    const alreadyJoined = await db.query("SELECT 1 FROM game_players WHERE game_id = $1 AND player_id = $2", [id, player_id]);
+    if (alreadyJoined.rows.length > 0) {
+      await db.query('ROLLBACK');
+      return res.status(400).json({ error: "player already joined" });
+    }
+
+    // 4. Add player to the game
     await db.query(
       "INSERT INTO game_players(game_id, player_id, turn_order) VALUES($1, $2, $3)",
       [id, player_id, currentCount]
     );
 
-    // If this was the last player needed, move game to 'active' status
+    // 5. If the game is now full, set it to active
     if (currentCount + 1 === game.max_players) {
-      await db.query(
-        "UPDATE games SET status = 'active' WHERE game_id = $1", 
-        [id]
-      );
+      await db.query("UPDATE games SET status = 'active' WHERE game_id = $1", [id]);
     }
 
     await db.query('COMMIT');
@@ -147,17 +113,8 @@ exports.getGame = async (req, res) => {
       return res.status(404).json({ error: "game not found" });
     }
 
-    const game = result.rows[0];
-    res.status(200).json({
-      game_id: game.game_id,
-      grid_size: game.grid_size,
-      status: game.status,
-      current_turn_index: game.current_turn_index,
-      active_players: parseInt(game.active_players)
-    });
-
+    res.json(result.rows[0]);
   } catch (err) {
-    console.error("Get Game Error:", err.message);
     res.status(500).json({ error: "database error" });
   }
 };
