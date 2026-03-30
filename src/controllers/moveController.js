@@ -52,7 +52,7 @@ exports.fireShot = async (req, res) => {
   try {
     const gameQuery = await db.query(
       `SELECT g.*, gp.turn_order,
-      (SELECT COUNT(*) FROM ships WHERE game_id = $1) as ships_placed
+      (SELECT COUNT(*) FROM ships WHERE game_id = $1) as total_ships_expected
        FROM games g 
        LEFT JOIN game_players gp ON g.game_id = gp.game_id AND gp.player_id = $2
        WHERE g.game_id = $1`,
@@ -62,17 +62,25 @@ exports.fireShot = async (req, res) => {
     if (gameQuery.rows.length === 0) return res.status(404).json({ error: "game not found" });
     const game = gameQuery.rows[0];
 
-    // FIX: Boundary check for firing
-    if (row < 0 || row >= game.grid_size || col < 0 || col >= game.grid_size) {
-        return res.status(400).json({ error: "fire coordinates out of bounds" });
+    // Check if game is already over
+    if (game.status.toLowerCase() === 'finished') {
+      return res.status(400).json({ error: "game already finished" });
     }
 
-    if (parseInt(game.ships_placed) < (parseInt(game.max_players) * 3)) {
-      return res.status(400).json({ error: "not all ships placed" });
-    }
     if (game.status.toLowerCase() !== 'active') {
       return res.status(400).json({ error: "game not active" });
     }
+
+    // Boundary check
+    if (row < 0 || row >= game.grid_size || col < 0 || col >= game.grid_size) {
+      return res.status(400).json({ error: "fire coordinates out of bounds" });
+    }
+
+    // Ensure all players have placed their ships (3 ships per player)
+    if (parseInt(game.total_ships_expected) < (parseInt(game.max_players) * 3)) {
+      return res.status(400).json({ error: "not all ships placed" });
+    }
+
     if (parseInt(game.current_turn_index) !== game.turn_order) {
       return res.status(400).json({ error: "not your turn" });
     }
@@ -83,6 +91,8 @@ exports.fireShot = async (req, res) => {
     }
 
     await db.query('BEGIN');
+    
+    // Check if it's a hit (targeting ANY opponent's ship)
     const target = await db.query("SELECT * FROM ships WHERE game_id=$1 AND player_id != $2 AND row=$3 AND col=$4", [id, player_id, row, col]);
     const result = target.rows.length > 0 ? "hit" : "miss";
 
@@ -94,29 +104,43 @@ exports.fireShot = async (req, res) => {
 
     // Check for Win Condition
     let gameStatus = 'active';
+    let winnerId = null;
+
     if (result === 'hit') {
-        const remaining = await db.query(
-            `SELECT COUNT(*) FROM ships s WHERE s.game_id = $1 AND s.player_id != $2
-             AND NOT EXISTS (SELECT 1 FROM moves m WHERE m.game_id=s.game_id AND m.row=s.row AND m.col=s.col AND m.result='hit')`,
+        // A player wins if all ships belonging to ALL OTHER players are hit
+        const remainingOpponentShips = await db.query(
+            `SELECT COUNT(*) FROM ships s 
+             WHERE s.game_id = $1 AND s.player_id != $2
+             AND NOT EXISTS (
+               SELECT 1 FROM moves m 
+               WHERE m.game_id = s.game_id AND m.row = s.row AND m.col = s.col AND m.result = 'hit'
+             )`,
             [id, player_id]
         );
-        if (parseInt(remaining.rows[0].count) === 0) {
-            gameStatus = 'completed';
-            await db.query("UPDATE games SET status = 'completed' WHERE game_id = $1", [id]);
+
+        if (parseInt(remainingOpponentShips.rows[0].count) === 0) {
+            gameStatus = 'finished';
+            winnerId = player_id;
+            await db.query("UPDATE games SET status = 'finished' WHERE game_id = $1", [id]);
         }
     }
 
-    // Determine next player ID
+    // Determine next player ID for response
     const nextPlayerRes = await db.query(
         "SELECT player_id FROM game_players WHERE game_id = $1 AND turn_order = $2",
         [id, nextTurnIndex]
     );
-    const next_player_id = (gameStatus === 'completed') ? null : (nextPlayerRes.rows[0]?.player_id || null);
+    const next_player_id = (gameStatus === 'finished') ? null : (nextPlayerRes.rows[0]?.player_id || null);
 
     await db.query('COMMIT');
-    res.json({ result, next_player_id, game_status: gameStatus });
+
+    const response = { result, next_player_id, game_status: gameStatus };
+    if (winnerId) response.winner_id = winnerId;
+    
+    res.json(response);
   } catch (err) {
     await db.query('ROLLBACK');
+    console.error(err);
     res.status(500).json({ error: "database error" });
   }
 };
