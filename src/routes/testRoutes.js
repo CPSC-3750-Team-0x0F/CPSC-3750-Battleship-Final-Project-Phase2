@@ -19,9 +19,9 @@ router.post('/:id/ships', verifyTestMode, testController.placeShips);
 // CHANGE: Added /:player_id to the path to match the contract requirements
 router.get('/:id/board/:player_id', verifyTestMode, testController.revealBoard);
 
-// POST /api/test/games/{id}/reset
+// POST /api/test/games/{id}/restart
 // Side Effect: Clears ships/moves and resets status to 'waiting'
-router.post('/:id/reset', verifyTestMode, testController.resetGame);
+router.post('/:id/restart', verifyTestMode, testController.resetGame);
 
 // Custom helper route (not in contract, but useful for testing)
 router.post('/:id/set-turn', verifyTestMode, testController.setTurn);
