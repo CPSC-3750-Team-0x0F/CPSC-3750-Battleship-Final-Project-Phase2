@@ -49,7 +49,7 @@ exports.fireShot = async (req, res) => {
   try {
     await db.query('BEGIN');
 
-    // 1. LOCK the game row to prevent concurrency race conditions
+    // 1. LOCK the game row
     const gameRes = await db.query("SELECT * FROM games WHERE game_id = $1 FOR UPDATE", [id]);
     if (gameRes.rows.length === 0) {
         await db.query('ROLLBACK');
@@ -61,6 +61,18 @@ exports.fireShot = async (req, res) => {
         await db.query('ROLLBACK');
         return res.status(400).json({ error: "game is not active" });
     }
+
+    // --- NEW READINESS CHECK ---
+    // Count how many ships are placed in this game
+    const shipCountRes = await db.query("SELECT COUNT(*) FROM ships WHERE game_id = $1", [id]);
+    const totalShipsPlaced = parseInt(shipCountRes.rows[0].count);
+    const requiredShips = game.max_players * 3; // 3 ships per player
+
+    if (totalShipsPlaced < requiredShips) {
+        await db.query('ROLLBACK');
+        return res.status(400).json({ error: "all players must place ships before firing" });
+    }
+    // ---------------------------
 
     // 2. Validate player's turn
     const turnRes = await db.query(
