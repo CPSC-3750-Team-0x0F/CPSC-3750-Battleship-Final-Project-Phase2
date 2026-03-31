@@ -16,13 +16,13 @@ app.use("/api/games", gameRoutes);
 app.use("/api/games", moveRoutes);
 
 /* ---------------- TEST ROUTES ---------------- */
-// Mount test routes once. The router handles the :id nesting.
+// Supporting both /api/test/:id and /api/test/games/:id 
 app.use("/api/test", testRoutes);
+app.use("/api/test/games", testRoutes);
 
 /* ---------------- SYSTEM RESET ---------------- */
 app.post("/api/reset", async (req, res) => {
   try {
-    // Order matters for deletion due to foreign keys
     await db.query("DELETE FROM moves");
     await db.query("DELETE FROM ships");
     await db.query("DELETE FROM game_players");
