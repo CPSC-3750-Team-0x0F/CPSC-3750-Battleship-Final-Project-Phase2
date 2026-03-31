@@ -1,5 +1,23 @@
 const db = require("../db");
 
+// 1. Create Player
+exports.createPlayer = async (req, res) => {
+  const { username } = req.body;
+  if (!username) return res.status(400).json({ error: "username required" });
+  
+  try {
+    const result = await db.query(
+      "INSERT INTO players(username, wins, losses, total_shots, total_hits) VALUES($1, 0, 0, 0, 0) RETURNING player_id", 
+      [username]
+    );
+    res.status(201).json({ player_id: result.rows[0].player_id });
+  } catch (err) {
+    console.error("Create Player Error:", err.message);
+    res.status(500).json({ error: "database error" });
+  }
+};
+
+// 2. Get Stats (The Persistence Fix)
 exports.getStats = async (req, res) => {
   const { id } = req.params;
   try {
@@ -23,8 +41,7 @@ exports.getStats = async (req, res) => {
 
     let accuracy = 0.00;
     if (total_shots > 0) {
-        // Rounding to exactly 2 decimal places
-        accuracy = Math.round((total_hits / total_shots) * 100) / 100;
+      accuracy = parseFloat((total_hits / total_shots).toFixed(2));
     }
 
     res.status(200).json({
@@ -37,8 +54,20 @@ exports.getStats = async (req, res) => {
       games_played: parseInt(gamesPlayedRes.rows[0].count) || 0,
       accuracy: accuracy 
     });
-
   } catch (err) {
+    console.error("Get Stats Error:", err.message);
     res.status(500).json({ error: "database error" });
   }
+};
+
+// 3. Helper: Get Individual Player (Prevents Route Crashing)
+exports.getPlayer = async (req, res) => {
+    const { id } = req.params;
+    try {
+        const result = await db.query("SELECT player_id, username FROM players WHERE player_id = $1", [id]);
+        if (result.rows.length === 0) return res.status(404).json({ error: "player not found" });
+        res.json(result.rows[0]);
+    } catch (err) {
+        res.status(500).json({ error: "database error" });
+    }
 };
