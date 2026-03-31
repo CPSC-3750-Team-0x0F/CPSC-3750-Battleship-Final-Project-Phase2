@@ -5,7 +5,6 @@ exports.createPlayer = async (req, res) => {
   if (!username) return res.status(400).json({ error: "username required" });
   
   try {
-    // We initialize the persistent stats columns to 0
     const result = await db.query(
       "INSERT INTO players(username, wins, losses, total_shots, total_hits) VALUES($1, 0, 0, 0, 0) RETURNING player_id", 
       [username]
@@ -20,9 +19,9 @@ exports.createPlayer = async (req, res) => {
 exports.getStats = async (req, res) => {
   const { id } = req.params;
   try {
-    // 1. Check if player exists and fetch persistent lifetime stats
+    // 1. Fetch lifetime stats directly from the players table
     const playerRes = await db.query(
-      "SELECT wins, losses, total_shots, total_hits FROM players WHERE player_id = $1", 
+      "SELECT username, wins, losses, total_shots, total_hits FROM players WHERE player_id = $1", 
       [id]
     );
     
@@ -30,7 +29,7 @@ exports.getStats = async (req, res) => {
       return res.status(404).json({ error: "player not found" });
     }
 
-    // 2. Fetch games_played from game_players (this link survives game resets)
+    // 2. Fetch total games joined from game_players
     const gamesPlayedRes = await db.query(
       "SELECT COUNT(*) as count FROM game_players WHERE player_id = $1", 
       [id]
@@ -43,19 +42,23 @@ exports.getStats = async (req, res) => {
     const losses = parseInt(player.losses) || 0;
     const games_played = parseInt(gamesPlayedRes.rows[0].count) || 0;
 
-    // 3. Calculate accuracy with 0.01 tolerance (using toFixed(2))
-    const accuracy = total_shots > 0 
-      ? parseFloat((total_hits / total_shots).toFixed(2)) 
-      : 0.0;
+    // 3. Calculate accuracy: must be a float rounded to 2 decimal places
+    let accuracy = 0.00;
+    if (total_shots > 0) {
+      accuracy = parseFloat((total_hits / total_shots).toFixed(2));
+    }
 
-    res.json({ 
-      games_played, 
-      wins, 
-      losses, 
-      total_shots, 
-      total_hits, 
-      accuracy 
+    res.status(200).json({
+      player_id: parseInt(id),
+      username: player.username,
+      wins: wins,
+      losses: losses,
+      total_shots: total_shots,
+      total_hits: total_hits,
+      games_played: games_played,
+      accuracy: accuracy 
     });
+
   } catch (err) {
     console.error("Get Stats Error:", err.message);
     res.status(500).json({ error: "database error" });
