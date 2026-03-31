@@ -61,82 +61,92 @@ exports.fireShot = async (req, res) => {
   try {
     await db.query('BEGIN');
 
-    // Lock the game row for concurrency
-    const gameRes = await db.query(
-      "SELECT status, current_turn_index, max_players FROM games WHERE game_id = $1 FOR UPDATE", 
-      [id]
-    );
-
+    // CONCURRENCY LOCK
+    const gameRes = await db.query("SELECT * FROM games WHERE game_id = $1 FOR UPDATE", [id]);
     if (gameRes.rows.length === 0) {
       await db.query('ROLLBACK');
       return res.status(404).json({ error: "game not found" });
     }
-
     const game = gameRes.rows[0];
-    if (game.status !== 'active') {
+
+    // READINESS CHECK: 
+    const shipCountRes = await db.query("SELECT COUNT(*) FROM ships WHERE game_id = $1", [id]);
+    const totalShipsInGame = parseInt(shipCountRes.rows[0].count);
+    const requiredShips = game.max_players * 3;
+
+    if (totalShipsInGame < requiredShips) {
       await db.query('ROLLBACK');
-      return res.status(400).json({ error: "game not active" });
+      return res.status(400).json({ error: "cannot fire before all players have placed ships" });
     }
 
+    if (game.status === 'finished') {
+      await db.query('ROLLBACK');
+      return res.status(400).json({ error: "game already finished" });
+    }
+
+    // TURN CHECK
     const turnRes = await db.query(
       "SELECT turn_order FROM game_players WHERE game_id = $1 AND player_id = $2",
       [id, player_id]
     );
-
     if (turnRes.rows.length === 0 || turnRes.rows[0].turn_order !== game.current_turn_index) {
       await db.query('ROLLBACK');
-      return res.status(400).json({ error: "not your turn or not in game" });
+      return res.status(400).json({ error: "not your turn" });
     }
 
-    // Check if shot hits any ship NOT belonging to the shooter
-    const hitRes = await db.query(
-      "SELECT player_id FROM ships WHERE game_id = $1 AND row = $2 AND col = $3 AND player_id != $4",
-      [id, row, col, player_id]
+    // PROCESS SHOT: Check if this coordinate hits an opponent's ship
+    const shipRes = await db.query(
+      "SELECT 1 FROM ships WHERE game_id = $1 AND player_id != $2 AND row = $3 AND col = $4",
+      [id, player_id, row, col]
     );
+    const result = shipRes.rows.length > 0 ? 'hit' : 'miss';
 
-    const result = hitRes.rows.length > 0 ? "hit" : "miss";
     await db.query(
       "INSERT INTO moves(game_id, player_id, row, col, result) VALUES($1, $2, $3, $4, $5)",
       [id, player_id, row, col, result]
     );
 
-    // Update attacker stats
+    // PERSISTENT STATS
+    const hitVal = result === 'hit' ? 1 : 0;
     await db.query(
       "UPDATE players SET total_shots = total_shots + 1, total_hits = total_hits + $1 WHERE player_id = $2",
-      [result === 'hit' ? 1 : 0, player_id]
+      [hitVal, player_id]
     );
 
+    // WIN DETECTION (Fix for Multiplayer)
+    // A player wins if the total number of unique opponent ship locations hit by ANYONE 
+    // equals the total number of opponent ships.
     let gameStatus = 'active';
     let winnerId = null;
 
     if (result === 'hit') {
-      const targetId = hitRes.rows[0].player_id;
-      
-      // Count total ships target has in this game
-      const totalShipsRes = await db.query("SELECT COUNT(*) FROM ships WHERE game_id = $1 AND player_id = $2", [id, targetId]);
-      
-      // Count unique locations where target has been hit in this game
-      const hitsOnTargetRes = await db.query(
-        `SELECT COUNT(DISTINCT m.move_id) 
-         FROM moves m
-         JOIN ships s ON m.game_id = s.game_id AND m.row = s.row AND m.col = s.col
-         WHERE m.game_id = $1 AND s.player_id = $2 AND m.result = 'hit'`,
-        [id, targetId]
+      // Count how many unique opponent ship coordinates have been hit across the whole game
+      const sunkShipsRes = await db.query(
+        `SELECT COUNT(DISTINCT s.ship_id) 
+         FROM ships s
+         JOIN moves m ON s.game_id = m.game_id AND s.row = m.row AND s.col = m.col
+         WHERE s.game_id = $1 AND s.player_id != $2 AND m.result = 'hit'`,
+        [id, player_id]
       );
 
-      if (parseInt(hitsOnTargetRes.rows[0].count) >= parseInt(totalShipsRes.rows[0].count)) {
+      const totalOpponentShips = (game.max_players - 1) * 3;
+      const totalSunkOpponentShips = parseInt(sunkShipsRes.rows[0].count);
+
+      if (totalSunkOpponentShips >= totalOpponentShips) {
         gameStatus = 'finished';
         winnerId = player_id;
-        
         await db.query("UPDATE games SET status = 'finished', winner_id = $1 WHERE game_id = $2", [winnerId, id]);
-        await db.query("UPDATE players SET wins = wins + 1 WHERE player_id = $1", [winnerId]);
+        
+        await db.query("UPDATE players SET wins = wins + 1 WHERE player_id = $1", [player_id]);
         await db.query(
-          "UPDATE players SET losses = losses + 1 WHERE player_id IN (SELECT player_id FROM game_players WHERE game_id = $1 AND player_id != $2)",
-          [id, winnerId]
+          `UPDATE players SET losses = losses + 1 
+           WHERE player_id IN (SELECT player_id FROM game_players WHERE game_id = $1 AND player_id != $2)`,
+          [id, player_id]
         );
       }
     }
 
+    // TURN ROTATION
     const nextTurnIndex = (game.current_turn_index + 1) % game.max_players;
     await db.query("UPDATE games SET current_turn_index = $1 WHERE game_id = $2", [nextTurnIndex, id]);
 
