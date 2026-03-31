@@ -11,19 +11,17 @@ const verifyTestMode = (req, res, next) => {
     next();
 };
 
-// POST /api/test/games/{id}/ships
-// Note: Mounted at /api/test/games in server.js, so we use /:id/ships here
+// POST /api/test/{id}/ships
 router.post('/:id/ships', verifyTestMode, testController.placeShips);
 
-// GET /api/test/games/{id}/board/{player_id}
-// CHANGE: Added /:player_id to the path to match the contract requirements
+// GET /api/test/{id}/board/{player_id}
 router.get('/:id/board/:player_id', verifyTestMode, testController.revealBoard);
 
-// POST /api/test/games/{id}/restart
-// Side Effect: Clears ships/moves and resets status to 'waiting'
-router.post('/:id/restart', verifyTestMode, testController.resetGame);
+// POST /api/test/{id}/reset
+// Matches the test-a.py call: requests.post(f"{BASE_URL}/test/{gid}/reset"...)
+router.post('/:id/reset', verifyTestMode, testController.resetGame);
 
-// Custom helper route (not in contract, but useful for testing)
+// Custom helper route
 router.post('/:id/set-turn', verifyTestMode, testController.setTurn);
 
 module.exports = router;

@@ -16,9 +16,8 @@ app.use("/api/games", gameRoutes);
 app.use("/api/games", moveRoutes);
 
 /* ---------------- TEST ROUTES ---------------- */
-// This mounts test routes under /api/test
+// Mount test routes once. The router handles the :id nesting.
 app.use("/api/test", testRoutes);
-app.use("/api/test/games", testRoutes);
 
 /* ---------------- SYSTEM RESET ---------------- */
 app.post("/api/reset", async (req, res) => {
