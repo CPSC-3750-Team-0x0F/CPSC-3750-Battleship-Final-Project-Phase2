@@ -1,6 +1,5 @@
 const db = require("../db");
 
-// 1. Create Player
 exports.createPlayer = async (req, res) => {
   const { username } = req.body;
   if (!username) return res.status(400).json({ error: "username required" });
@@ -17,10 +16,10 @@ exports.createPlayer = async (req, res) => {
   }
 };
 
-// 2. Get Stats (The Persistence Fix)
 exports.getStats = async (req, res) => {
   const { id } = req.params;
   try {
+    // 1. Fetch lifetime stats directly from the players table
     const playerRes = await db.query(
       "SELECT username, wins, losses, total_shots, total_hits FROM players WHERE player_id = $1", 
       [id]
@@ -30,6 +29,7 @@ exports.getStats = async (req, res) => {
       return res.status(404).json({ error: "player not found" });
     }
 
+    // 2. Fetch total games joined from game_players
     const gamesPlayedRes = await db.query(
       "SELECT COUNT(*) as count FROM game_players WHERE player_id = $1", 
       [id]
@@ -38,7 +38,11 @@ exports.getStats = async (req, res) => {
     const player = playerRes.rows[0];
     const total_shots = parseInt(player.total_shots) || 0;
     const total_hits = parseInt(player.total_hits) || 0;
+    const wins = parseInt(player.wins) || 0;
+    const losses = parseInt(player.losses) || 0;
+    const games_played = parseInt(gamesPlayedRes.rows[0].count) || 0;
 
+    // 3. Calculate accuracy: must be a float rounded to 2 decimal places
     let accuracy = 0.00;
     if (total_shots > 0) {
       accuracy = parseFloat((total_hits / total_shots).toFixed(2));
@@ -47,27 +51,16 @@ exports.getStats = async (req, res) => {
     res.status(200).json({
       player_id: parseInt(id),
       username: player.username,
-      wins: parseInt(player.wins) || 0,
-      losses: parseInt(player.losses) || 0,
+      wins: wins,
+      losses: losses,
       total_shots: total_shots,
       total_hits: total_hits,
-      games_played: parseInt(gamesPlayedRes.rows[0].count) || 0,
+      games_played: games_played,
       accuracy: accuracy 
     });
+
   } catch (err) {
     console.error("Get Stats Error:", err.message);
     res.status(500).json({ error: "database error" });
   }
-};
-
-// 3. Helper: Get Individual Player (Prevents Route Crashing)
-exports.getPlayer = async (req, res) => {
-    const { id } = req.params;
-    try {
-        const result = await db.query("SELECT player_id, username FROM players WHERE player_id = $1", [id]);
-        if (result.rows.length === 0) return res.status(404).json({ error: "player not found" });
-        res.json(result.rows[0]);
-    } catch (err) {
-        res.status(500).json({ error: "database error" });
-    }
 };
