@@ -4,19 +4,26 @@ exports.placeShips = async (req, res) => {
   const { id } = req.params;
   const { player_id, ships } = req.body;
 
-  // STRICT VALIDATION: Restored to fix "test wrong number of ships rejected"
+  // Requirement: exactly 3 ships
   if (!player_id || !ships || !Array.isArray(ships) || ships.length !== 3) {
     return res.status(400).json({ error: "exactly 3 ships required" });
   }
 
   try {
-    const gameResult = await db.query("SELECT grid_size FROM games WHERE game_id = $1", [id]);
+    const gameResult = await db.query("SELECT grid_size, max_players FROM games WHERE game_id = $1", [id]);
     if (gameResult.rows.length === 0) return res.status(404).json({ error: "game not found" });
-    const gridSize = gameResult.rows[0].grid_size;
+    const { grid_size } = gameResult.rows[0];
 
     await db.query('BEGIN');
     
-    // Check if ships already placed to prevent duplicates
+    // Check if player is actually in the game
+    const playerInGame = await db.query("SELECT 1 FROM game_players WHERE game_id = $1 AND player_id = $2", [id, player_id]);
+    if (playerInGame.rows.length === 0) {
+      await db.query('ROLLBACK');
+      return res.status(404).json({ error: "player not in game" });
+    }
+
+    // Check if ships already placed
     const existing = await db.query("SELECT 1 FROM ships WHERE game_id = $1 AND player_id = $2", [id, player_id]);
     if (existing.rows.length > 0) {
       await db.query('ROLLBACK');
@@ -25,14 +32,14 @@ exports.placeShips = async (req, res) => {
 
     const seen = new Set();
     for (const ship of ships) {
-      if (ship.row < 0 || ship.row >= gridSize || ship.col < 0 || ship.col >= gridSize) {
+      if (ship.row < 0 || ship.row >= grid_size || ship.col < 0 || ship.col >= grid_size) {
         await db.query('ROLLBACK');
         return res.status(400).json({ error: "out of bounds" });
       }
       const pos = `${ship.row},${ship.col}`;
       if (seen.has(pos)) {
         await db.query('ROLLBACK');
-        return res.status(400).json({ error: "duplicate ship positions" });
+        return res.status(400).json({ error: "overlapping ships" });
       }
       seen.add(pos);
       await db.query("INSERT INTO ships(game_id, player_id, row, col) VALUES($1, $2, $3, $4)", [id, player_id, ship.row, ship.col]);
@@ -53,7 +60,7 @@ exports.fireShot = async (req, res) => {
   try {
     await db.query('BEGIN');
 
-    // CONCURRENCY LOCK: Uses FOR UPDATE to prevent race conditions
+    // CONCURRENCY LOCK
     const gameRes = await db.query("SELECT * FROM games WHERE game_id = $1 FOR UPDATE", [id]);
     if (gameRes.rows.length === 0) {
       await db.query('ROLLBACK');
@@ -61,14 +68,15 @@ exports.fireShot = async (req, res) => {
     }
     const game = gameRes.rows[0];
 
-    if (game.status !== 'active' && game.status !== 'finished') {
-       // Allow firing only if game is active. If test script moves fast, 
-       // ensure we handle the 'waiting' state correctly.
-       const shipCountRes = await db.query("SELECT COUNT(*) FROM ships WHERE game_id = $1", [id]);
-       if (parseInt(shipCountRes.rows[0].count) < (game.max_players * 3)) {
-         await db.query('ROLLBACK');
-         return res.status(400).json({ error: "game not ready or all ships not placed" });
-       }
+    // READINESS CHECK: 
+    // Must have exactly max_players * 3 ships in the table for this game
+    const shipCountRes = await db.query("SELECT COUNT(*) FROM ships WHERE game_id = $1", [id]);
+    const totalShips = parseInt(shipCountRes.rows[0].count);
+    const requiredShips = game.max_players * 3;
+
+    if (totalShips < requiredShips) {
+      await db.query('ROLLBACK');
+      return res.status(400).json({ error: "cannot fire before all players have placed ships" });
     }
 
     if (game.status === 'finished') {
@@ -98,7 +106,7 @@ exports.fireShot = async (req, res) => {
       [id, player_id, row, col, result]
     );
 
-    // PERSISTENT STATS UPDATE
+    // PERSISTENT STATS
     const hitVal = result === 'hit' ? 1 : 0;
     await db.query(
       "UPDATE players SET total_shots = total_shots + 1, total_hits = total_hits + $1 WHERE player_id = $2",
@@ -124,8 +132,7 @@ exports.fireShot = async (req, res) => {
         gameStatus = 'finished';
         winnerId = player_id;
         await db.query("UPDATE games SET status = 'finished' WHERE game_id = $1", [id]);
-
-        // UPDATE LIFETIME WINS/LOSSES
+        
         await db.query("UPDATE players SET wins = wins + 1 WHERE player_id = $1", [player_id]);
         await db.query(
           `UPDATE players SET losses = losses + 1 
@@ -135,7 +142,7 @@ exports.fireShot = async (req, res) => {
       }
     }
 
-    // UPDATE TURN INDEX
+    // TURN ROTATION
     const nextTurnIndex = (game.current_turn_index + 1) % game.max_players;
     await db.query("UPDATE games SET current_turn_index = $1 WHERE game_id = $2", [nextTurnIndex, id]);
 
