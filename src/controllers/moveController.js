@@ -47,9 +47,10 @@ exports.fireShot = async (req, res) => {
   const { player_id, row, col } = req.body;
 
   try {
+    // 1. Start transaction immediately to handle concurrency
     await db.query('BEGIN');
 
-    // CONCURRENCY FIX: 'FOR UPDATE' locks this game row until COMMIT
+    // 2. CONCURRENCY FIX: Use 'FOR UPDATE' to lock the game row so no one else can fire simultaneously
     const gameRes = await db.query("SELECT * FROM games WHERE game_id = $1 FOR UPDATE", [id]);
     if (gameRes.rows.length === 0) {
       await db.query('ROLLBACK');
@@ -62,14 +63,14 @@ exports.fireShot = async (req, res) => {
       return res.status(400).json({ error: "game is not active" });
     }
 
-    // READINESS CHECK: Ensure all ships are placed
+    // 3. READY CHECK: Ensure all players placed ships before firing starts
     const shipCountRes = await db.query("SELECT COUNT(*) FROM ships WHERE game_id = $1", [id]);
     if (parseInt(shipCountRes.rows[0].count) < (game.max_players * 3)) {
       await db.query('ROLLBACK');
-      return res.status(400).json({ error: "not all ships placed" });
+      return res.status(400).json({ error: "all players must place ships before firing" });
     }
 
-    // TURN VALIDATION
+    // 4. TURN CHECK: Ensure it's actually this player's turn
     const turnRes = await db.query(
       "SELECT turn_order FROM game_players WHERE game_id = $1 AND player_id = $2",
       [id, player_id]
@@ -79,7 +80,7 @@ exports.fireShot = async (req, res) => {
       return res.status(400).json({ error: "not your turn" });
     }
 
-    // PROCESS HIT/MISS
+    // 5. PROCESS HIT/MISS
     const shipRes = await db.query(
       "SELECT 1 FROM ships WHERE game_id = $1 AND player_id != $2 AND row = $3 AND col = $4",
       [id, player_id, row, col]
@@ -91,19 +92,19 @@ exports.fireShot = async (req, res) => {
       [id, player_id, row, col, result]
     );
 
-    // Update individual lifetime shot stats
-    const hitVal = result === 'hit' ? 1 : 0;
+    // 6. UPDATE LIFETIME PERSISTENT STATS (Shots/Hits)
+    const isHit = result === 'hit' ? 1 : 0;
     await db.query(
       "UPDATE players SET total_shots = total_shots + 1, total_hits = total_hits + $1 WHERE player_id = $2",
-      [hitVal, player_id]
+      [isHit, player_id]
     );
 
-    // WIN DETECTION & STATS PERSISTENCE
+    // 7. WIN DETECTION & LIFETIME WINS/LOSSES
     let gameStatus = 'active';
     let winnerId = null;
 
     if (result === 'hit') {
-      const remainingShips = await db.query(
+      const remaining = await db.query(
         `SELECT COUNT(*) FROM ships s 
          WHERE s.game_id = $1 AND s.player_id != $2
          AND NOT EXISTS (
@@ -113,12 +114,14 @@ exports.fireShot = async (req, res) => {
         [id, player_id]
       );
 
-      if (parseInt(remainingShips.rows[0].count) === 0) {
+      if (parseInt(remaining.rows[0].count) === 0) {
         gameStatus = 'finished';
         winnerId = player_id;
+
+        // Mark game finished in DB
         await db.query("UPDATE games SET status = 'finished' WHERE game_id = $1", [id]);
 
-        // STATS FIX: Update wins for the winner and losses for the opponent(s)
+        // STATS PERSISTENCE FIX: Increment lifetime wins and losses in the players table
         await db.query("UPDATE players SET wins = wins + 1 WHERE player_id = $1", [player_id]);
         await db.query(
           `UPDATE players SET losses = losses + 1 
@@ -128,7 +131,7 @@ exports.fireShot = async (req, res) => {
       }
     }
 
-    // UPDATE TURN
+    // 8. UPDATE TURN INDEX
     const nextTurnIndex = (game.current_turn_index + 1) % game.max_players;
     await db.query("UPDATE games SET current_turn_index = $1 WHERE game_id = $2", [nextTurnIndex, id]);
 
@@ -143,6 +146,7 @@ exports.fireShot = async (req, res) => {
 
   } catch (err) {
     if (db) await db.query('ROLLBACK');
+    console.error("Fire Shot Error:", err.message);
     res.status(500).json({ error: "database error" });
   }
 };
