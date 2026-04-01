@@ -61,27 +61,29 @@ exports.fireShot = async (req, res) => {
   const { id } = req.params;
   const { player_id, row, col } = req.body;
 
-  // Parse and validate numeric inputs early to avoid DB type errors / injection-style crashes
-  const gameId = parseInt(id, 10);
-  const shooterId = parseInt(player_id, 10);
-  const shotRow = parseInt(row, 10);
-  const shotCol = parseInt(col, 10);
+  const isStrictInt = (value) =>
+    (typeof value === "number" && Number.isInteger(value)) ||
+    (typeof value === "string" && /^-?\d+$/.test(value));
 
   if (
-    Number.isNaN(gameId) ||
-    Number.isNaN(shooterId) ||
-    Number.isNaN(shotRow) ||
-    Number.isNaN(shotCol)
+    !isStrictInt(id) ||
+    !isStrictInt(player_id) ||
+    !isStrictInt(row) ||
+    !isStrictInt(col)
   ) {
     return res.status(400).json({ error: "invalid numeric input" });
   }
+
+  const gameId = Number(id);
+  const shooterId = Number(player_id);
+  const shotRow = Number(row);
+  const shotCol = Number(col);
 
   const client = typeof db.connect === "function" ? await db.connect() : db;
 
   try {
     await client.query("BEGIN");
 
-    // Lock game row so concurrent requests cannot both pass turn validation
     const gameRes = await client.query(
       `SELECT game_id, grid_size, status, current_turn_index, max_players
        FROM games
@@ -97,7 +99,6 @@ exports.fireShot = async (req, res) => {
 
     const game = gameRes.rows[0];
 
-    // Check player membership EARLY so outsiders do not get misleading game-state errors
     const turnRes = await client.query(
       "SELECT turn_order FROM game_players WHERE game_id = $1 AND player_id = $2",
       [gameId, shooterId]
@@ -128,8 +129,6 @@ exports.fireShot = async (req, res) => {
       return res.status(400).json({ error: "fire coordinates out of bounds" });
     }
 
-    // For normal games and test-mode games, require that every joined player
-    // has at least one ship placed before firing can begin.
     const shipsReadyRes = await client.query(
       `SELECT COUNT(DISTINCT player_id) AS players_with_ships
        FROM ships
@@ -144,13 +143,11 @@ exports.fireShot = async (req, res) => {
       return res.status(400).json({ error: "cannot fire before all players have placed ships" });
     }
 
-    // Turn enforcement
     if (turnRes.rows[0].turn_order !== game.current_turn_index) {
       await client.query("ROLLBACK");
       return res.status(400).json({ error: "not your turn" });
     }
 
-    // Prevent duplicate shots at same coordinate in same game
     const shotExistsRes = await client.query(
       "SELECT 1 FROM moves WHERE game_id = $1 AND row = $2 AND col = $3",
       [gameId, shotRow, shotCol]
@@ -161,7 +158,6 @@ exports.fireShot = async (req, res) => {
       return res.status(400).json({ error: "already fired here" });
     }
 
-    // Determine hit/miss against opponent ships
     const hitRes = await client.query(
       `SELECT ship_id, player_id
        FROM ships
@@ -174,13 +170,11 @@ exports.fireShot = async (req, res) => {
 
     const result = hitRes.rows.length > 0 ? "hit" : "miss";
 
-    // Record move
     await client.query(
       "INSERT INTO moves(game_id, player_id, row, col, result) VALUES($1, $2, $3, $4, $5)",
       [gameId, shooterId, shotRow, shotCol, result]
     );
 
-    // Update shooter stats immediately, including winning shot
     await client.query(
       `UPDATE players
        SET total_shots = total_shots + 1,
@@ -227,7 +221,6 @@ exports.fireShot = async (req, res) => {
           [winnerId, gameId]
         );
 
-        // Winner
         await client.query(
           `UPDATE players
            SET wins = wins + 1,
@@ -236,7 +229,6 @@ exports.fireShot = async (req, res) => {
           [winnerId]
         );
 
-        // Loser(s)
         await client.query(
           `UPDATE players
            SET losses = losses + 1,
@@ -252,7 +244,6 @@ exports.fireShot = async (req, res) => {
       }
     }
 
-    // Only rotate turn if the game is still active
     if (gameStatus !== "finished") {
       const nextTurnIndex = (game.current_turn_index + 1) % game.max_players;
 
