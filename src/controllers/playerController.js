@@ -1,17 +1,20 @@
 const db = require("../db");
 
 exports.createPlayer = async (req, res) => {
-  const { username } = req.body;
+  const { username } = req.body || {};
 
   if (typeof username !== "string" || username.trim() === "") {
     return res.status(400).json({ error: "username required" });
   }
 
   try {
+    const cleanUsername = username.trim();
+
     const result = await db.query(
-      "INSERT INTO players(username, wins, losses, games_played, total_shots, total_hits) VALUES($1, 0, 0, 0, 0, 0) RETURNING player_id",
-      [username.trim()]
+      "INSERT INTO players(username, wins, losses, total_shots, total_hits) VALUES($1, 0, 0, 0, 0) RETURNING player_id",
+      [cleanUsername]
     );
+
     return res.status(201).json({ player_id: result.rows[0].player_id });
   } catch (err) {
     console.error("Create Player Error:", err.message);
