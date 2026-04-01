@@ -82,6 +82,17 @@ exports.fireShot = async (req, res) => {
 
     const game = gameRes.rows[0];
 
+    // Check player membership EARLY so outsiders do not get misleading game-state errors
+    const turnRes = await client.query(
+      "SELECT turn_order FROM game_players WHERE game_id = $1 AND player_id = $2",
+      [id, player_id]
+    );
+
+    if (turnRes.rows.length === 0) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ error: "player not in game" });
+    }
+
     if (game.status === "finished") {
       await client.query("ROLLBACK");
       return res.status(400).json({ error: "game already finished" });
@@ -104,18 +115,7 @@ exports.fireShot = async (req, res) => {
       return res.status(400).json({ error: "fire coordinates out of bounds" });
     }
 
-    // Player must actually be in the game
-    const turnRes = await client.query(
-      "SELECT turn_order FROM game_players WHERE game_id = $1 AND player_id = $2",
-      [id, player_id]
-    );
-
-    if (turnRes.rows.length === 0) {
-      await client.query("ROLLBACK");
-      return res.status(404).json({ error: "player not in game" });
-    }
-
-    // For normal games and test-mode games, just require that every joined player
+    // For normal games and test-mode games, require that every joined player
     // has at least one ship placed before firing can begin.
     const shipsReadyRes = await client.query(
       `SELECT COUNT(DISTINCT player_id) AS players_with_ships
@@ -181,7 +181,6 @@ exports.fireShot = async (req, res) => {
     let next_player_id = null;
 
     if (result === "hit") {
-      // Count actual opponent ships in this game (works for normal play and test-mode 1-ship setups)
       const totalOpponentShipsRes = await client.query(
         `SELECT COUNT(*) AS count
          FROM ships
