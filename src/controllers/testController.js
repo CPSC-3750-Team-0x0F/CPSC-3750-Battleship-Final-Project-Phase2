@@ -52,9 +52,10 @@ exports.resetGame = async (req, res) => {
     // We keep the game_players so the game can be re-played by the same people
     await db.query(
       `UPDATE games 
-       SET status = 'waiting', 
-           current_turn_index = 0
-       WHERE game_id = $1`,
+      SET status = 'waiting',
+          current_turn_index = 0,
+          winner_id = NULL
+      WHERE game_id = $1`,
       [id]
     );
 
