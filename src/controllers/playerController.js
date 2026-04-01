@@ -23,7 +23,7 @@ exports.getStats = async (req, res) => {
       "SELECT username, wins, losses, games_played, total_shots, total_hits FROM players WHERE player_id = $1",
       [id]
     );
-    
+
     if (playerRes.rows.length === 0) {
       return res.status(404).json({ error: "player not found" });
     }
@@ -35,24 +35,17 @@ exports.getStats = async (req, res) => {
     const losses = parseInt(player.losses) || 0;
     const games_played = parseInt(player.games_played) || 0;
 
-    let accuracy = 0.0;
-    if (total_shots > 0) {
-      accuracy = parseFloat((total_hits / total_shots).toFixed(2));
-    }
+    const accuracyValue = total_shots > 0 ? (total_hits / total_shots) : 0;
+    const accuracyLiteral = accuracyValue.toFixed(2); // keeps 1.00 / 0.00 / 0.50
 
-    res.status(200).json({
-      player_id: parseInt(id),
-      username: player.username,
-      wins,
-      losses,
-      total_shots,
-      total_hits,
-      games_played,
-      accuracy
-    });
-
+    return res
+      .status(200)
+      .type("application/json")
+      .send(
+        `{"player_id":${parseInt(id)},"username":${JSON.stringify(player.username)},"wins":${wins},"losses":${losses},"total_shots":${total_shots},"total_hits":${total_hits},"games_played":${games_played},"accuracy":${accuracyLiteral}}`
+      );
   } catch (err) {
     console.error("Get Stats Error:", err.message);
-    res.status(500).json({ error: "database error" });
+    return res.status(500).json({ error: "database error" });
   }
 };

@@ -61,6 +61,21 @@ exports.fireShot = async (req, res) => {
   const { id } = req.params;
   const { player_id, row, col } = req.body;
 
+  // Parse and validate numeric inputs early to avoid DB type errors / injection-style crashes
+  const gameId = parseInt(id, 10);
+  const shooterId = parseInt(player_id, 10);
+  const shotRow = parseInt(row, 10);
+  const shotCol = parseInt(col, 10);
+
+  if (
+    Number.isNaN(gameId) ||
+    Number.isNaN(shooterId) ||
+    Number.isNaN(shotRow) ||
+    Number.isNaN(shotCol)
+  ) {
+    return res.status(400).json({ error: "invalid numeric input" });
+  }
+
   const client = typeof db.connect === "function" ? await db.connect() : db;
 
   try {
@@ -72,7 +87,7 @@ exports.fireShot = async (req, res) => {
        FROM games
        WHERE game_id = $1
        FOR UPDATE`,
-      [id]
+      [gameId]
     );
 
     if (gameRes.rows.length === 0) {
@@ -85,7 +100,7 @@ exports.fireShot = async (req, res) => {
     // Check player membership EARLY so outsiders do not get misleading game-state errors
     const turnRes = await client.query(
       "SELECT turn_order FROM game_players WHERE game_id = $1 AND player_id = $2",
-      [id, player_id]
+      [gameId, shooterId]
     );
 
     if (turnRes.rows.length === 0) {
@@ -104,12 +119,10 @@ exports.fireShot = async (req, res) => {
     }
 
     if (
-      row === undefined ||
-      col === undefined ||
-      row < 0 ||
-      row >= game.grid_size ||
-      col < 0 ||
-      col >= game.grid_size
+      shotRow < 0 ||
+      shotRow >= game.grid_size ||
+      shotCol < 0 ||
+      shotCol >= game.grid_size
     ) {
       await client.query("ROLLBACK");
       return res.status(400).json({ error: "fire coordinates out of bounds" });
@@ -121,7 +134,7 @@ exports.fireShot = async (req, res) => {
       `SELECT COUNT(DISTINCT player_id) AS players_with_ships
        FROM ships
        WHERE game_id = $1`,
-      [id]
+      [gameId]
     );
 
     const playersWithShips = parseInt(shipsReadyRes.rows[0].players_with_ships, 10);
@@ -140,7 +153,7 @@ exports.fireShot = async (req, res) => {
     // Prevent duplicate shots at same coordinate in same game
     const shotExistsRes = await client.query(
       "SELECT 1 FROM moves WHERE game_id = $1 AND row = $2 AND col = $3",
-      [id, row, col]
+      [gameId, shotRow, shotCol]
     );
 
     if (shotExistsRes.rows.length > 0) {
@@ -156,7 +169,7 @@ exports.fireShot = async (req, res) => {
          AND row = $2
          AND col = $3
          AND player_id != $4`,
-      [id, row, col, player_id]
+      [gameId, shotRow, shotCol, shooterId]
     );
 
     const result = hitRes.rows.length > 0 ? "hit" : "miss";
@@ -164,7 +177,7 @@ exports.fireShot = async (req, res) => {
     // Record move
     await client.query(
       "INSERT INTO moves(game_id, player_id, row, col, result) VALUES($1, $2, $3, $4, $5)",
-      [id, player_id, row, col, result]
+      [gameId, shooterId, shotRow, shotCol, result]
     );
 
     // Update shooter stats immediately, including winning shot
@@ -173,7 +186,7 @@ exports.fireShot = async (req, res) => {
        SET total_shots = total_shots + 1,
            total_hits = total_hits + $1
        WHERE player_id = $2`,
-      [result === "hit" ? 1 : 0, player_id]
+      [result === "hit" ? 1 : 0, shooterId]
     );
 
     let gameStatus = "active";
@@ -186,7 +199,7 @@ exports.fireShot = async (req, res) => {
          FROM ships
          WHERE game_id = $1
            AND player_id != $2`,
-        [id, player_id]
+        [gameId, shooterId]
       );
 
       const sunkOpponentShipsRes = await client.query(
@@ -199,7 +212,7 @@ exports.fireShot = async (req, res) => {
          WHERE s.game_id = $1
            AND s.player_id != $2
            AND m.result = 'hit'`,
-        [id, player_id]
+        [gameId, shooterId]
       );
 
       const totalOpponentShips = parseInt(totalOpponentShipsRes.rows[0].count, 10);
@@ -207,11 +220,11 @@ exports.fireShot = async (req, res) => {
 
       if (totalOpponentShips > 0 && sunkCount >= totalOpponentShips) {
         gameStatus = "finished";
-        winnerId = player_id;
+        winnerId = shooterId;
 
         await client.query(
           "UPDATE games SET status = 'finished', winner_id = $1 WHERE game_id = $2",
-          [winnerId, id]
+          [winnerId, gameId]
         );
 
         // Winner
@@ -234,7 +247,7 @@ exports.fireShot = async (req, res) => {
              WHERE game_id = $1
                AND player_id != $2
            )`,
-          [id, winnerId]
+          [gameId, winnerId]
         );
       }
     }
@@ -245,12 +258,12 @@ exports.fireShot = async (req, res) => {
 
       await client.query(
         "UPDATE games SET current_turn_index = $1 WHERE game_id = $2",
-        [nextTurnIndex, id]
+        [nextTurnIndex, gameId]
       );
 
       const nextPlayerRes = await client.query(
         "SELECT player_id FROM game_players WHERE game_id = $1 AND turn_order = $2",
-        [id, nextTurnIndex]
+        [gameId, nextTurnIndex]
       );
 
       next_player_id = nextPlayerRes.rows[0]?.player_id || null;
