@@ -8,19 +8,36 @@ exports.placeShips = async (req, res) => {
   }
 
   try {
+    // Fetch grid_size to validate that ships are placed within bounds
+    const gameRes = await db.query("SELECT grid_size FROM games WHERE game_id = $1", [id]);
+    if (gameRes.rows.length === 0) {
+      return res.status(404).json({ error: "game not found" });
+    }
+    const gridSize = gameRes.rows[0].grid_size;
+
     await db.query('BEGIN');
+    
     // Test mode allows overwriting ships
     await db.query("DELETE FROM ships WHERE game_id = $1 AND player_id = $2", [id, player_id]);
+    
     for (const ship of ships) {
+      // Boundary Validation: Reject if row or col is outside 0 to (gridSize - 1)
+      if (ship.row < 0 || ship.row >= gridSize || ship.col < 0 || ship.col >= gridSize) {
+        await db.query('ROLLBACK');
+        return res.status(400).json({ error: "out of bounds" });
+      }
+
       await db.query(
         "INSERT INTO ships(game_id, player_id, row, col) VALUES($1, $2, $3, $4)",
         [id, player_id, ship.row, ship.col]
       );
     }
+    
     await db.query('COMMIT');
     res.status(200).json({ status: "ships_set" });
   } catch (err) {
     if (db) await db.query('ROLLBACK');
+    console.error("Place Ships Error:", err.message);
     res.status(500).json({ error: "database error" });
   }
 };
@@ -44,12 +61,9 @@ exports.resetGame = async (req, res) => {
   try {
     await db.query('BEGIN');
 
-    // 1. Clear game state data for this specific game
     await db.query("DELETE FROM ships WHERE game_id = $1", [id]);
     await db.query("DELETE FROM moves WHERE game_id = $1", [id]);
 
-    // 2. Reset game metadata to initial state
-    // We keep the game_players so the game can be re-played by the same people
     await db.query(
       `UPDATE games 
       SET status = 'waiting',
@@ -60,8 +74,6 @@ exports.resetGame = async (req, res) => {
     );
 
     await db.query('COMMIT');
-
-    // Returns 200 OK and JSON body to satisfy the test suite
     res.status(200).json({ status: "success", message: "game reset" });
   } catch (err) {
     if (db) await db.query('ROLLBACK');

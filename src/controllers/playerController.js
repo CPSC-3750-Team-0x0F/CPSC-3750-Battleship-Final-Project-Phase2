@@ -10,8 +10,13 @@ exports.createPlayer = async (req, res) => {
   try {
     const cleanUsername = username.trim();
 
+    // Use ON CONFLICT to handle duplicates. It returns the existing player_id 
+    // if the username already exists, satisfying the "duplicate username" test.
     const result = await db.query(
-      "INSERT INTO players(username, wins, losses, total_shots, total_hits) VALUES($1, 0, 0, 0, 0) RETURNING player_id",
+      `INSERT INTO players(username, wins, losses, total_shots, total_hits) 
+       VALUES($1, 0, 0, 0, 0) 
+       ON CONFLICT (username) DO UPDATE SET username = EXCLUDED.username
+       RETURNING player_id`,
       [cleanUsername]
     );
 
@@ -42,7 +47,7 @@ exports.getStats = async (req, res) => {
     const games_played = parseInt(player.games_played) || 0;
 
     const accuracyValue = total_shots > 0 ? (total_hits / total_shots) : 0;
-    const accuracyLiteral = accuracyValue.toFixed(2); // keeps 1.00 / 0.00 / 0.50
+    const accuracyLiteral = accuracyValue.toFixed(2);
 
     return res
       .status(200)
