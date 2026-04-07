@@ -7,7 +7,7 @@ const isStrictInt = (value) =>
 exports.createGame = async (req, res) => {
   const { creator_id, grid_size, max_players } = req.body || {};
 
-  // Loosened check to handle potential string/number mismatches from test scripts
+  // Loosened check to ensure we don't reject valid numeric strings from the test script
   if (creator_id === undefined || grid_size === undefined || max_players === undefined) {
     return res.status(400).json({ 
       error: "bad_request", 
@@ -32,7 +32,7 @@ exports.createGame = async (req, res) => {
   try {
     await client.query("BEGIN");
 
-    // Ensure the player exists before letting them create a game
+    // Verify creator exists
     const playerCheck = await client.query("SELECT 1 FROM players WHERE player_id = $1", [creatorId]);
     if (playerCheck.rows.length === 0) {
       await client.query("ROLLBACK");
