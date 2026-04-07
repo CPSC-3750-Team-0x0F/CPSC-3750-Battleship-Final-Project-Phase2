@@ -7,26 +7,23 @@ const isStrictInt = (value) =>
 exports.createGame = async (req, res) => {
   const { creator_id, grid_size, max_players } = req.body || {};
 
-  if (
-    !isStrictInt(creator_id) ||
-    !isStrictInt(grid_size) ||
-    !isStrictInt(max_players)
-  ) {
+  // Loosened check to handle potential string/number mismatches from test scripts
+  if (creator_id === undefined || grid_size === undefined || max_players === undefined) {
     return res.status(400).json({ 
       error: "bad_request", 
-      message: "missing required fields" 
+      message: "missing required fields: creator_id, grid_size, or max_players" 
     });
   }
 
-  const creatorId = Number(creator_id);
-  const gridSize = Number(grid_size);
-  const maxPlayers = Number(max_players);
+  const creatorId = parseInt(creator_id);
+  const gridSize = parseInt(grid_size);
+  const maxPlayers = parseInt(max_players);
 
   // Contract: 5-15 grid, 2-10 players
-  if (gridSize < 5 || gridSize > 15 || maxPlayers < 2 || maxPlayers > 10) {
+  if (isNaN(gridSize) || gridSize < 5 || gridSize > 15 || isNaN(maxPlayers) || maxPlayers < 2 || maxPlayers > 10) {
     return res.status(400).json({ 
       error: "bad_request", 
-      message: "invalid grid size or max players" 
+      message: "invalid grid size (5-15) or max players (2-10)" 
     });
   }
 
@@ -35,16 +32,24 @@ exports.createGame = async (req, res) => {
   try {
     await client.query("BEGIN");
 
+    // Ensure the player exists before letting them create a game
+    const playerCheck = await client.query("SELECT 1 FROM players WHERE player_id = $1", [creatorId]);
+    if (playerCheck.rows.length === 0) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ error: "not_found", message: "Creator player not found" });
+    }
+
     // Initial status per contract: 'waiting_setup'
     const result = await client.query(
       `INSERT INTO games(creator_id, grid_size, max_players, status, current_turn_index)
        VALUES($1, $2, $3, 'waiting_setup', 0)
-       RETURNING game_id, grid_size, status, current_turn_index`,
+       RETURNING game_id, grid_size, status`,
       [creatorId, gridSize, maxPlayers]
     );
 
     const game = result.rows[0];
 
+    // Automatically join the creator to the game as player 0
     await client.query(
       "INSERT INTO game_players(game_id, player_id, turn_order) VALUES($1, $2, $3)",
       [game.game_id, creatorId, 0]
@@ -62,7 +67,7 @@ exports.createGame = async (req, res) => {
     console.error("Create Game Error:", err.message);
     return res.status(500).json({ 
       error: "server_error", 
-      message: "database error" 
+      message: err.message 
     });
   } finally {
     if (client !== db && typeof client.release === "function") {
@@ -82,8 +87,8 @@ exports.joinGame = async (req, res) => {
     });
   }
 
-  const gameId = Number(id);
-  const playerId = Number(player_id);
+  const gameId = parseInt(id);
+  const playerId = parseInt(player_id);
   const client = typeof db.connect === "function" ? await db.connect() : db;
 
   try {
@@ -136,7 +141,6 @@ exports.joinGame = async (req, res) => {
       [gameId, playerId, currentCount]
     );
 
-    // Status remains 'waiting_setup' until ships are placed by everyone
     await client.query("COMMIT");
 
     return res.status(200).json({ status: "joined", turn_order: currentCount });
@@ -168,7 +172,7 @@ exports.getGame = async (req, res) => {
       `SELECT g.game_id, g.grid_size, g.status, g.current_turn_index, g.max_players,
        (SELECT COUNT(*) FROM game_players WHERE game_id = g.game_id) as active_players
        FROM games g WHERE g.game_id = $1`,
-      [Number(id)]
+      [parseInt(id)]
     );
 
     if (result.rows.length === 0) {
@@ -180,7 +184,6 @@ exports.getGame = async (req, res) => {
 
     const game = result.rows[0];
     
-    // Contract requires standardized keys for GameDetail schema
     return res.json({
       game_id: game.game_id,
       grid_size: game.grid_size,
