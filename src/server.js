@@ -20,6 +20,44 @@ app.use("/api/games", moveRoutes);
 app.use("/api/test", testRoutes);
 app.use("/api/test/games", testRoutes);
 
+/* ---------------- CONTRACT ENDPOINTS (v2.3) ---------------- */
+
+/**
+ * GET /api
+ * Returns system metadata as required by the Ultra Contract
+ */
+app.get("/api", (req, res) => {
+  res.status(200).json({
+    name: "Battleship API",
+    version: "2.3.0",
+    spec_version: "2.3",
+    environment: "production",
+    test_mode: true
+  });
+});
+
+/**
+ * GET /api/version
+ * Official version info endpoint
+ */
+app.get("/api/version", (req, res) => {
+  res.status(200).json({
+    api_version: "2.3.0",
+    spec_version: "2.3"
+  });
+});
+
+/**
+ * GET /api/health
+ * Standardized health check for distributed systems
+ */
+app.get("/api/health", (req, res) => {
+  res.status(200).json({
+    status: "ok",
+    uptime_seconds: Math.floor(process.uptime())
+  });
+});
+
 /* ---------------- SYSTEM RESET ---------------- */
 app.post("/api/reset", async (req, res) => {
   try {
@@ -32,12 +70,16 @@ app.post("/api/reset", async (req, res) => {
     res.status(200).json({ status: "reset" });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "reset failed" });
+    // Standardized error format: { error, message }
+    res.status(500).json({ 
+      error: "server_error", 
+      message: "system reset failed" 
+    });
   }
 });
 
 app.get("/", (req, res) => {
-  res.send("Battleship API running");
+  res.send("Battleship API v2.3 - Clemson School of Computing");
 });
 
 const PORT = process.env.PORT || 3000;
