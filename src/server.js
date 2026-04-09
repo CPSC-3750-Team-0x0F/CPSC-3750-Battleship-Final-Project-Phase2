@@ -16,8 +16,6 @@ app.use("/api/games", gameRoutes);
 app.use("/api/games", moveRoutes);
 
 /* ---------------- TEST ROUTES ---------------- */
-// Mount strictly to /api/test. 
-// Paths inside testRoutes.js will now account for the "/games" segment.
 app.use("/api/test", testRoutes);
 
 /* ---------------- CONTRACT ENDPOINTS (v2.3) ---------------- */

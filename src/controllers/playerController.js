@@ -17,7 +17,6 @@ exports.createPlayer = async (req, res) => {
   }
 
   try {
-    // Check for existence first to return 409 Conflict as required by T0022 and T0087
     const existing = await db.query("SELECT player_id FROM players WHERE username = $1", [username]);
     if (existing.rows.length > 0) {
       return res.status(409).json({ 
@@ -63,7 +62,7 @@ exports.getStats = async (req, res) => {
     const total_shots = parseInt(player.total_shots) || 0;
     const total_hits = parseInt(player.total_hits) || 0;
 
-    // Fixed: Accuracy as a NUMBER (float) to satisfy T0014, T0048, and T0060
+    // Fixed: Accuracy as a NUMBER (float) to satisfy strict JSON type checking
     const accuracy = total_shots > 0 
       ? Number((total_hits / total_shots).toFixed(2)) 
       : 0.0;
