@@ -1,8 +1,19 @@
 const db = require("../db");
 
+const isValidInt = (val) => {
+  return typeof val === "string" && /^\d+$/.test(val);
+};
+
 exports.placeShips = async (req, res) => {
   const { id } = req.params;
   const { player_id, ships } = req.body || {};
+
+  if (!isValidInt(id) || !isValidInt(String(player_id))) {
+    return res.status(400).json({
+      error: "bad_request",
+      message: "invalid id"
+    });
+  }
 
   if (!player_id || !Array.isArray(ships)) {
     return res.status(400).json({
@@ -105,6 +116,13 @@ exports.placeShips = async (req, res) => {
 exports.revealBoard = async (req, res) => {
   const { id, player_id } = req.params;
 
+  if (!isValidInt(id) || !isValidInt(player_id)) {
+    return res.status(400).json({
+      error: "bad_request",
+      message: "invalid id"
+    });
+  }
+
   try {
     const gameRes = await db.query(
       "SELECT 1 FROM games WHERE game_id = $1",
@@ -156,6 +174,13 @@ exports.revealBoard = async (req, res) => {
 exports.resetGame = async (req, res) => {
   const { id } = req.params;
 
+  if (!isValidInt(id)) {
+    return res.status(400).json({
+      error: "bad_request",
+      message: "invalid id"
+    });
+  }
+
   try {
     await db.query("BEGIN");
 
@@ -190,10 +215,10 @@ exports.setTurn = async (req, res) => {
   const { id } = req.params;
   const { player_id } = req.body || {};
 
-  if (!player_id) {
+  if (!isValidInt(id) || !isValidInt(String(player_id))) {
     return res.status(400).json({
       error: "bad_request",
-      message: "missing player_id"
+      message: "invalid id"
     });
   }
 
