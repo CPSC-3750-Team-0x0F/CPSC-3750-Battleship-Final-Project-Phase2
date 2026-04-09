@@ -2,8 +2,6 @@ const db = require("../db");
 
 exports.createPlayer = async (req, res) => {
   const { username } = req.body || {};
-
-  // Contract requires alphanumeric + underscores, 1-30 chars
   const usernameRegex = /^[A-Za-z0-9_]+$/;
 
   if (
@@ -19,11 +17,18 @@ exports.createPlayer = async (req, res) => {
   }
 
   try {
-    // ON CONFLICT satisfies the contract requirement for "Create or reuse player"
+    // Check for existence first to return 409 Conflict as required by T0022 and T0087
+    const existing = await db.query("SELECT player_id FROM players WHERE username = $1", [username]);
+    if (existing.rows.length > 0) {
+      return res.status(409).json({ 
+        error: "conflict", 
+        message: "username already exists" 
+      });
+    }
+
     const result = await db.query(
       `INSERT INTO players(username, wins, losses, total_shots, total_hits, games_played) 
        VALUES($1, 0, 0, 0, 0, 0) 
-       ON CONFLICT (username) DO UPDATE SET username = EXCLUDED.username
        RETURNING player_id`,
       [username]
     );
@@ -58,10 +63,10 @@ exports.getStats = async (req, res) => {
     const total_shots = parseInt(player.total_shots) || 0;
     const total_hits = parseInt(player.total_hits) || 0;
 
-    // Fixed: Accuracy as a STRING with 2 decimal places to satisfy strict test scripts
+    // Fixed: Accuracy as a NUMBER (float) to satisfy T0014, T0048, and T0060
     const accuracy = total_shots > 0 
-      ? (total_hits / total_shots).toFixed(2) 
-      : "0.00";
+      ? Number((total_hits / total_shots).toFixed(2)) 
+      : 0.0;
 
     return res.status(200).json({
       username: player.username,

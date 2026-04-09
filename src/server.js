@@ -12,20 +12,17 @@ app.use(bodyParser.json());
 
 /* ---------------- API ROUTES ---------------- */
 app.use("/api/players", playerRoutes);
+
+// Combine game and move routes under the same prefix to avoid middleware conflicts
 app.use("/api/games", gameRoutes);
 app.use("/api/games", moveRoutes);
 
 /* ---------------- TEST ROUTES ---------------- */
-// Supporting both /api/test/:id and /api/test/games/:id 
+// Mount strictly to /api/test; routes inside testRoutes.js handle the rest
 app.use("/api/test", testRoutes);
-app.use("/api/test/games", testRoutes);
 
 /* ---------------- CONTRACT ENDPOINTS (v2.3) ---------------- */
 
-/**
- * GET /api
- * Returns system metadata as required by the Ultra Contract
- */
 app.get("/api", (req, res) => {
   res.status(200).json({
     name: "Battleship API",
@@ -36,10 +33,6 @@ app.get("/api", (req, res) => {
   });
 });
 
-/**
- * GET /api/version
- * Official version info endpoint
- */
 app.get("/api/version", (req, res) => {
   res.status(200).json({
     api_version: "2.3.0",
@@ -47,10 +40,6 @@ app.get("/api/version", (req, res) => {
   });
 });
 
-/**
- * GET /api/health
- * Standardized health check for distributed systems
- */
 app.get("/api/health", (req, res) => {
   res.status(200).json({
     status: "ok",
@@ -70,7 +59,6 @@ app.post("/api/reset", async (req, res) => {
     res.status(200).json({ status: "reset" });
   } catch (err) {
     console.error(err);
-    // Standardized error format: { error, message }
     res.status(500).json({ 
       error: "server_error", 
       message: "system reset failed" 

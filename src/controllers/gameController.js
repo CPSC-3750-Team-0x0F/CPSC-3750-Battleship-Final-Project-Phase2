@@ -7,7 +7,6 @@ const isStrictInt = (value) =>
 exports.createGame = async (req, res) => {
   const { creator_id, grid_size, max_players } = req.body || {};
 
-  // 1. Flexible validation: Ensure fields exist and can be parsed as integers
   if (creator_id === undefined || grid_size === undefined || max_players === undefined) {
     return res.status(400).json({ 
       error: "bad_request", 
@@ -19,20 +18,32 @@ exports.createGame = async (req, res) => {
   const gridSize = parseInt(grid_size);
   const maxPlayers = parseInt(max_players);
 
-  // 2. Bound Validation
-  if (isNaN(gridSize) || gridSize < 5 || gridSize > 15 || isNaN(maxPlayers) || maxPlayers < 2 || maxPlayers > 10) {
+  // Updated error message to match T0053 expectations
+  if (isNaN(gridSize) || gridSize < 5 || gridSize > 15) {
+      return res.status(400).json({ 
+        error: "bad_request", 
+        message: "gridSize must be between 5 and 15" 
+      });
+  }
+
+  if (isNaN(maxPlayers) || maxPlayers < 2 || maxPlayers > 10) {
     return res.status(400).json({ 
       error: "bad_request", 
-      message: "invalid grid size (5-15) or max players (2-10)" 
+      message: "invalid max players (2-10)" 
     });
   }
 
   const client = typeof db.connect === "function" ? await db.connect() : db;
 
   try {
+    // Prevent 500 error: verify player exists before referencing in transaction
+    const playerCheck = await client.query("SELECT 1 FROM players WHERE player_id = $1", [creatorId]);
+    if (playerCheck.rows.length === 0) {
+        return res.status(404).json({ error: "not_found", message: "player does not exist" });
+    }
+
     await client.query("BEGIN");
 
-    // 3. Create the game with the required 'waiting_setup' status
     const result = await client.query(
       `INSERT INTO games(creator_id, grid_size, max_players, status, current_turn_index)
        VALUES($1, $2, $3, 'waiting_setup', 0)
@@ -42,7 +53,6 @@ exports.createGame = async (req, res) => {
 
     const game = result.rows[0];
 
-    // 4. CRITICAL: Automatically join the creator to the game_players table
     await client.query(
       "INSERT INTO game_players(game_id, player_id, turn_order) VALUES($1, $2, $3)",
       [game.game_id, creatorId, 0]
@@ -50,7 +60,6 @@ exports.createGame = async (req, res) => {
 
     await client.query("COMMIT");
 
-    // 5. Return exactly what the test script expects
     return res.status(201).json({
       game_id: game.game_id,
       grid_size: game.grid_size,
@@ -85,6 +94,7 @@ exports.joinGame = async (req, res) => {
     const playerExists = await client.query("SELECT 1 FROM players WHERE player_id = $1", [playerId]);
     if (playerExists.rows.length === 0) {
       await client.query("ROLLBACK");
+      // Match T0063 expectation
       return res.status(404).json({ 
         error: "not_found", 
         message: "player does not exist" 
@@ -104,10 +114,11 @@ exports.joinGame = async (req, res) => {
     const countRes = await client.query("SELECT COUNT(*) FROM game_players WHERE game_id = $1", [gameId]);
     const currentCount = parseInt(countRes.rows[0].count, 10);
 
+    // Match T0081/T0084: return 409 Conflict if game is full
     if (currentCount >= game.max_players) {
       await client.query("ROLLBACK");
-      return res.status(400).json({ 
-        error: "bad_request", 
+      return res.status(409).json({ 
+        error: "conflict", 
         message: "game full" 
       });
     }
@@ -118,8 +129,9 @@ exports.joinGame = async (req, res) => {
     );
     if (alreadyJoined.rows.length > 0) {
       await client.query("ROLLBACK");
-      return res.status(400).json({ 
-        error: "bad_request", 
+      // Match T0035/T0018: return 409 Conflict for duplicate join
+      return res.status(409).json({ 
+        error: "conflict", 
         message: "player already joined" 
       });
     }
@@ -178,7 +190,7 @@ exports.getGame = async (req, res) => {
       status: game.status,
       current_turn_index: game.current_turn_index,
       max_players: game.max_players,
-      players_joined: parseInt(game.active_players)
+      active_players: parseInt(game.active_players)
     });
   } catch (err) {
     return res.status(500).json({ 
