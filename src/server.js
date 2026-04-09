@@ -12,13 +12,12 @@ app.use(bodyParser.json());
 
 /* ---------------- API ROUTES ---------------- */
 app.use("/api/players", playerRoutes);
-
-// Combine game and move routes under the same prefix to avoid middleware conflicts
 app.use("/api/games", gameRoutes);
 app.use("/api/games", moveRoutes);
 
 /* ---------------- TEST ROUTES ---------------- */
-// Mount strictly to /api/test; routes inside testRoutes.js handle the rest
+// Mount strictly to /api/test. 
+// Paths inside testRoutes.js will now account for the "/games" segment.
 app.use("/api/test", testRoutes);
 
 /* ---------------- CONTRACT ENDPOINTS (v2.3) ---------------- */
@@ -50,11 +49,9 @@ app.get("/api/health", (req, res) => {
 /* ---------------- SYSTEM RESET ---------------- */
 app.post("/api/reset", async (req, res) => {
   try {
-    await db.query("DELETE FROM moves");
-    await db.query("DELETE FROM ships");
-    await db.query("DELETE FROM game_players");
-    await db.query("DELETE FROM games");
-    await db.query("DELETE FROM players");
+    // RESTART IDENTITY resets SERIAL counters to 1.
+    // CASCADE handles foreign key dependencies automatically.
+    await db.query("TRUNCATE players, games, game_players, ships, moves RESTART IDENTITY CASCADE");
 
     res.status(200).json({ status: "reset" });
   } catch (err) {
