@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const testController = require("../controllers/testcontroller");
+const testController = require("../controllers/testController");
 
 const verifyTestMode = (req, res, next) => {
   const TEST_PASSWORD = "clemson-test-2026";
