@@ -1,5 +1,3 @@
-const db = require("../db");
-
 // controllers/playerController.js
 
 const db = require("../db");
