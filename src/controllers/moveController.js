@@ -105,7 +105,7 @@ exports.placeShips = async (req, res) => {
 
     if (parseInt(shipsReadyRes.rows[0].count) === max_players) {
       await client.query(
-        "UPDATE games SET status = 'playing' WHERE game_id = $1",
+        "UPDATE games SET status = 'active' WHERE game_id = $1",
         [id]
       );
     }
@@ -168,9 +168,9 @@ exports.fireShot = async (req, res) => {
       return res.status(400).json({ error: "bad_request", message: "game already finished" });
     }
 
-    if (game.status !== "playing") {
+    if (game.status !== "active") {
       await client.query("ROLLBACK");
-      return res.status(400).json({ error: "bad_request", message: "game not in playing state" });
+      return res.status(400).json({ error: "bad_request", message: "game not in active state" });
     }
 
     const turnRes = await client.query(
@@ -223,7 +223,7 @@ if (turnRes.rows[0].turn_order !== game.current_turn_index) {
       [result === "hit" ? 1 : 0, shooterId]
     );
 
-    let gameStatus = "playing";
+    let gameStatus = "active";
     let winnerId = null;
 
     if (result === "hit") {
