@@ -67,7 +67,7 @@ exports.createGame = async (req, res) => {
 
     const gameResult = await client.query(
       `INSERT INTO games (creator_id, grid_size, max_players, status, current_turn_index)
-       VALUES ($1, $2, $3, 'waiting', 0)
+       VALUES ($1, $2, $3, 'waiting_setup', 0)
        RETURNING game_id, grid_size, status`,
       [creatorId, gridSize, maxPlayers]
     );
@@ -149,7 +149,7 @@ exports.joinGame = async (req, res) => {
 
     const game = gameRes.rows[0];
 
-    if (game.status !== "waiting") {
+    if (game.status !== "waiting_setup") {
       await client.query("ROLLBACK");
       client.release();
       return res.status(409).json({

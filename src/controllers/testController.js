@@ -189,7 +189,7 @@ exports.resetGame = async (req, res) => {
 
     await db.query(
       `UPDATE games
-       SET status = 'waiting',
+       SET status = 'waiting_setup',
            current_turn_index = 0,
            winner_id = NULL
        WHERE game_id = $1`,
