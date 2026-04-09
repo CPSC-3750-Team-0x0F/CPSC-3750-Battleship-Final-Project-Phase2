@@ -6,8 +6,8 @@ exports.placeShips = async (req, res) => {
 
   if (!player_id || !Array.isArray(ships)) {
     return res.status(400).json({
-      error: true,
-      message: "missing player_id or ships"
+      error: "bad_request",
+      message: "Missing player_id or ships array"
     });
   }
 
@@ -19,7 +19,7 @@ exports.placeShips = async (req, res) => {
 
     if (gameRes.rows.length === 0) {
       return res.status(404).json({
-        error: true,
+        error: "not_found",
         message: "game not found"
       });
     }
@@ -31,7 +31,7 @@ exports.placeShips = async (req, res) => {
 
     if (membershipRes.rows.length === 0) {
       return res.status(404).json({
-        error: true,
+        error: "not_found",
         message: "player not in game"
       });
     }
@@ -46,7 +46,7 @@ exports.placeShips = async (req, res) => {
         typeof ship.col !== "number"
       ) {
         return res.status(400).json({
-          error: true,
+          error: "bad_request",
           message: "invalid ship coordinates"
         });
       }
@@ -58,7 +58,7 @@ exports.placeShips = async (req, res) => {
         ship.col >= gridSize
       ) {
         return res.status(400).json({
-          error: true,
+          error: "bad_request",
           message: "out of bounds"
         });
       }
@@ -66,7 +66,7 @@ exports.placeShips = async (req, res) => {
       const key = `${ship.row},${ship.col}`;
       if (seen.has(key)) {
         return res.status(400).json({
-          error: true,
+          error: "bad_request",
           message: "duplicate ship position"
         });
       }
@@ -91,11 +91,13 @@ exports.placeShips = async (req, res) => {
 
     return res.status(200).json({ status: "ships_set" });
   } catch (err) {
-    try { await db.query("ROLLBACK"); } catch {}
+    try {
+      await db.query("ROLLBACK");
+    } catch (_) {}
     console.error("placeShips error:", err);
     return res.status(500).json({
-      error: true,
-      message: "internal server error"
+      error: "server_error",
+      message: "database error"
     });
   }
 };
@@ -111,7 +113,7 @@ exports.revealBoard = async (req, res) => {
 
     if (gameRes.rows.length === 0) {
       return res.status(404).json({
-        error: true,
+        error: "not_found",
         message: "game not found"
       });
     }
@@ -123,7 +125,7 @@ exports.revealBoard = async (req, res) => {
 
     if (membershipRes.rows.length === 0) {
       return res.status(404).json({
-        error: true,
+        error: "not_found",
         message: "player not in game"
       });
     }
@@ -145,8 +147,8 @@ exports.revealBoard = async (req, res) => {
   } catch (err) {
     console.error("revealBoard error:", err);
     return res.status(500).json({
-      error: true,
-      message: "internal server error"
+      error: "server_error",
+      message: "database error"
     });
   }
 };
@@ -173,11 +175,13 @@ exports.resetGame = async (req, res) => {
 
     return res.status(200).json({ status: "reset" });
   } catch (err) {
-    try { await db.query("ROLLBACK"); } catch {}
+    try {
+      await db.query("ROLLBACK");
+    } catch (_) {}
     console.error("resetGame error:", err);
     return res.status(500).json({
-      error: true,
-      message: "internal server error"
+      error: "server_error",
+      message: "database error"
     });
   }
 };
@@ -188,38 +192,40 @@ exports.setTurn = async (req, res) => {
 
   if (!player_id) {
     return res.status(400).json({
-      error: true,
+      error: "bad_request",
       message: "missing player_id"
     });
   }
 
   try {
-    const player = await db.query(
+    const playerRes = await db.query(
       "SELECT turn_order FROM game_players WHERE game_id = $1 AND player_id = $2",
       [id, player_id]
     );
 
-    if (player.rows.length === 0) {
+    if (playerRes.rows.length === 0) {
       return res.status(404).json({
-        error: true,
+        error: "not_found",
         message: "player not in game"
       });
     }
 
+    const turnOrder = Number(playerRes.rows[0].turn_order);
+
     await db.query(
       "UPDATE games SET current_turn_index = $1 WHERE game_id = $2",
-      [player.rows[0].turn_order, id]
+      [turnOrder, id]
     );
 
     return res.status(200).json({
       status: "turn_set",
-      current_turn_index: Number(player.rows[0].turn_order)
+      current_turn_index: turnOrder
     });
   } catch (err) {
     console.error("setTurn error:", err);
     return res.status(500).json({
-      error: true,
-      message: "internal server error"
+      error: "server_error",
+      message: "database error"
     });
   }
 };

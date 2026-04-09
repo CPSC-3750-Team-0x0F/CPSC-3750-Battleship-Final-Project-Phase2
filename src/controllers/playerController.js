@@ -2,19 +2,18 @@ const db = require("../db");
 
 // controllers/playerController.js
 
+const db = require("../db");
+
 exports.createPlayer = async (req, res) => {
   const { username } = req.body || {};
   const usernameRegex = /^[A-Za-z0-9_]+$/;
 
-  // Missing username
   if (username === undefined || username === null) {
     return res.status(400).json({
-      error: true,
-      message: "missing username"
+      error: "Missing required field: username"
     });
   }
 
-  // Wrong type or invalid format
   if (
     typeof username !== "string" ||
     username.length < 1 ||
@@ -22,8 +21,8 @@ exports.createPlayer = async (req, res) => {
     !usernameRegex.test(username)
   ) {
     return res.status(400).json({
-      error: true,
-      message: "invalid username"
+      error: "bad_request",
+      message: "Invalid username"
     });
   }
 
@@ -37,17 +36,16 @@ exports.createPlayer = async (req, res) => {
       player_id: result.rows[0].player_id
     });
   } catch (err) {
-    // PostgreSQL unique violation
     if (err.code === "23505") {
       return res.status(409).json({
-        error: true,
-        message: "username already exists"
+        error: "conflict",
+        message: "Username already taken"
       });
     }
 
     console.error("createPlayer error:", err);
     return res.status(500).json({
-      error: true,
+      error: "server_error",
       message: "internal server error"
     });
   }

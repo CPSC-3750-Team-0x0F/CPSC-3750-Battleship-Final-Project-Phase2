@@ -8,8 +8,7 @@ const verifyTestMode = (req, res, next) => {
 
   if (providedPass !== TEST_PASSWORD) {
     return res.status(403).json({
-      error: true,
-      message: "forbidden"
+      error: "Forbidden"
     });
   }
 
