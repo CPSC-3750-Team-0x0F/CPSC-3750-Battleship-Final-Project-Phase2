@@ -4,86 +4,125 @@ exports.placeShips = async (req, res) => {
   const { id } = req.params;
   const { player_id, ships } = req.body;
 
-  // Contract: exactly 3 ships
-  if (!player_id || !ships || !Array.isArray(ships) || ships.length !== 3) {
-    return res.status(400).json({ 
-      error: "bad_request", 
-      message: "exactly 3 ships required" 
+  if (!player_id || !Array.isArray(ships) || ships.length !== 3) {
+    return res.status(400).json({
+      error: "bad_request",
+      message: "exactly 3 ships required"
     });
   }
 
-  // Internal Overlap Check
-  const coords = new Set();
-  for (const s of ships) {
-    const key = `${s.row},${s.col}`;
-    if (coords.has(key)) {
-      return res.status(400).json({ 
-        error: "bad_request", 
-        message: "overlapping ships" 
-      });
-    }
-    coords.add(key);
-  }
+  const client = await db.connect();
 
   try {
-    const gameResult = await db.query("SELECT grid_size, status, max_players FROM games WHERE game_id = $1", [id]);
+    await client.query("BEGIN");
+
+    const gameResult = await client.query(
+      "SELECT grid_size, status, max_players FROM games WHERE game_id = $1 FOR UPDATE",
+      [id]
+    );
+
     if (gameResult.rows.length === 0) {
-      return res.status(404).json({ 
-        error: "not_found", 
-        message: "game not found" 
+      await client.query("ROLLBACK");
+      return res.status(404).json({
+        error: "not_found",
+        message: "game not found"
       });
     }
-    const { grid_size, max_players } = gameResult.rows[0];
 
-    await db.query('BEGIN');
-    
-    const playerInGame = await db.query("SELECT 1 FROM game_players WHERE game_id = $1 AND player_id = $2", [id, player_id]);
+    const { grid_size, max_players, status } = gameResult.rows[0];
+
+    if (status !== "waiting_setup") {
+      await client.query("ROLLBACK");
+      return res.status(409).json({
+        error: "conflict",
+        message: "ship placement closed"
+      });
+    }
+
+    const playerInGame = await client.query(
+      "SELECT 1 FROM game_players WHERE game_id = $1 AND player_id = $2",
+      [id, player_id]
+    );
+
     if (playerInGame.rows.length === 0) {
-      await db.query('ROLLBACK');
-      return res.status(404).json({ 
-        error: "not_found", 
-        message: "player not in game" 
+      await client.query("ROLLBACK");
+      return res.status(404).json({
+        error: "not_found",
+        message: "player not in game"
       });
     }
 
-    const existing = await db.query("SELECT 1 FROM ships WHERE game_id = $1 AND player_id = $2", [id, player_id]);
+    const existing = await client.query(
+      "SELECT 1 FROM ships WHERE game_id = $1 AND player_id = $2",
+      [id, player_id]
+    );
+
     if (existing.rows.length > 0) {
-      await db.query('ROLLBACK');
-      return res.status(400).json({ 
-        error: "bad_request", 
-        message: "ships already placed" 
+      await client.query("ROLLBACK");
+      return res.status(409).json({
+        error: "conflict",
+        message: "ships already placed"
       });
+    }
+
+    const coords = new Set();
+    for (const ship of ships) {
+      const key = `${ship.row},${ship.col}`;
+
+      if (coords.has(key)) {
+        await client.query("ROLLBACK");
+        return res.status(400).json({
+          error: "bad_request",
+          message: "overlapping ships"
+        });
+      }
+
+      if (
+        ship.row < 0 || ship.row >= grid_size ||
+        ship.col < 0 || ship.col >= grid_size
+      ) {
+        await client.query("ROLLBACK");
+        return res.status(400).json({
+          error: "bad_request",
+          message: "out of bounds"
+        });
+      }
+
+      coords.add(key);
     }
 
     for (const ship of ships) {
-      if (ship.row < 0 || ship.row >= grid_size || ship.col < 0 || ship.col >= grid_size) {
-        await db.query('ROLLBACK');
-        return res.status(400).json({ 
-          error: "bad_request", 
-          message: "out of bounds" 
-        });
-      }
-      await db.query("INSERT INTO ships(game_id, player_id, row, col) VALUES($1, $2, $3, $4)", [id, player_id, ship.row, ship.col]);
+      await client.query(
+        "INSERT INTO ships(game_id, player_id, row, col) VALUES($1, $2, $3, $4)",
+        [id, player_id, ship.row, ship.col]
+      );
     }
 
-    // Check if all players have now placed ships to transition state
-    const shipsReadyRes = await db.query(
+    const shipsReadyRes = await client.query(
       "SELECT COUNT(DISTINCT player_id) AS count FROM ships WHERE game_id = $1",
       [id]
     );
-    
+
     if (parseInt(shipsReadyRes.rows[0].count) === max_players) {
-      await db.query("UPDATE games SET status = 'playing' WHERE game_id = $1", [id]);
+      await client.query(
+        "UPDATE games SET status = 'playing' WHERE game_id = $1",
+        [id]
+      );
     }
 
-    await db.query('COMMIT');
-    res.status(200).json({ status: "ships_placed" });
+    await client.query("COMMIT");
+
+    return res.status(200).json({ status: "ships_placed" });
+
   } catch (err) {
-    if (db) await db.query('ROLLBACK');
-    res.status(500).json({ 
-      error: "server_error", 
-      message: "database error" 
+    try { await client.query("ROLLBACK"); } catch (_) {}
+    console.error("placeShips error:", err);
+    return res.status(500).json({
+      error: "server_error",
+      message: "database error"
     });
+  } finally {
+    client.release();
   }
 };
 
