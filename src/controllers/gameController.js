@@ -123,7 +123,6 @@ exports.joinGame = async (req, res) => {
       "SELECT 1 FROM players WHERE player_id = $1",
       [playerId]
     );
-
     if (playerRes.rows.length === 0) {
       await client.query("ROLLBACK");
       client.release();
@@ -137,7 +136,6 @@ exports.joinGame = async (req, res) => {
       "SELECT * FROM games WHERE game_id = $1 FOR UPDATE",
       [gameId]
     );
-
     if (gameRes.rows.length === 0) {
       await client.query("ROLLBACK");
       client.release();
@@ -149,26 +147,16 @@ exports.joinGame = async (req, res) => {
 
     const game = gameRes.rows[0];
 
-    if (game.status !== "waiting_setup") {
-      await client.query("ROLLBACK");
-      client.release();
-      return res.status(409).json({
-        error: "conflict",
-        message: "game already started"
-      });
-    }
-
-    const alreadyJoined = await client.query(
-      "SELECT 1 FROM game_players WHERE game_id = $1 AND player_id = $2",
+    const existingJoin = await client.query(
+      "SELECT turn_order FROM game_players WHERE game_id = $1 AND player_id = $2",
       [gameId, playerId]
     );
-
-    if (alreadyJoined.rows.length > 0) {
-      await client.query("ROLLBACK");
+    if (existingJoin.rows.length > 0) {
+      await client.query("COMMIT");
       client.release();
-      return res.status(409).json({
-        error: "conflict",
-        message: "player already joined"
+      return res.status(200).json({
+        status: "joined",
+        turn_order: Number(existingJoin.rows[0].turn_order)
       });
     }
 
@@ -176,7 +164,6 @@ exports.joinGame = async (req, res) => {
       "SELECT COUNT(*)::int AS count FROM game_players WHERE game_id = $1",
       [gameId]
     );
-
     const currentCount = countRes.rows[0].count;
 
     if (currentCount >= Number(game.max_players)) {
@@ -188,9 +175,17 @@ exports.joinGame = async (req, res) => {
       });
     }
 
+    if (game.status !== "waiting_setup") {
+      await client.query("ROLLBACK");
+      client.release();
+      return res.status(409).json({
+        error: "conflict",
+        message: "game already started"
+      });
+    }
+
     await client.query(
-      `INSERT INTO game_players (game_id, player_id, turn_order)
-       VALUES ($1, $2, $3)`,
+      "INSERT INTO game_players (game_id, player_id, turn_order) VALUES ($1, $2, $3)",
       [gameId, playerId, currentCount]
     );
 
@@ -202,9 +197,7 @@ exports.joinGame = async (req, res) => {
       turn_order: currentCount
     });
   } catch (err) {
-    try {
-      await client.query("ROLLBACK");
-    } catch (_) {}
+    try { await client.query("ROLLBACK"); } catch (_) {}
     client.release();
     console.error("joinGame error:", err);
     return res.status(500).json({
