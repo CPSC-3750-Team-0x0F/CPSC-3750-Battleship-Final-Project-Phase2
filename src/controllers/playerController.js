@@ -1,44 +1,33 @@
 const db = require("../db");
 
+// controllers/playerController.js
+
 exports.createPlayer = async (req, res) => {
   const { username } = req.body || {};
   const usernameRegex = /^[A-Za-z0-9_]+$/;
 
-  if (
-    typeof username !== "string" || 
-    username.length < 1 || 
-    username.length > 30 || 
-    !usernameRegex.test(username)
-  ) {
+  if (!username || typeof username !== "string" || username.length < 1 || username.length > 30 || !usernameRegex.test(username)) {
     return res.status(400).json({ 
       error: "bad_request", 
-      message: "Username must be 1-30 characters and alphanumeric with underscores only" 
+      message: "Invalid username" // Ensure this matches the expected format
     });
   }
 
   try {
+    // Check if player exists first to handle the 409 vs 201 requirement clearly
     const existing = await db.query("SELECT player_id FROM players WHERE username = $1", [username]);
     if (existing.rows.length > 0) {
-      return res.status(409).json({ 
-        error: "conflict", 
-        message: "username already exists" 
-      });
+      return res.status(409).json({ error: "conflict", message: "Username already taken" });
     }
 
     const result = await db.query(
-      `INSERT INTO players(username, wins, losses, total_shots, total_hits, games_played) 
-       VALUES($1, 0, 0, 0, 0, 0) 
-       RETURNING player_id`,
+      "INSERT INTO players(username) VALUES($1) RETURNING player_id",
       [username]
     );
 
     return res.status(201).json({ player_id: result.rows[0].player_id });
   } catch (err) {
-    console.error("Create Player Error:", err.message);
-    return res.status(500).json({ 
-      error: "server_error", 
-      message: "database error during player creation" 
-    });
+    return res.status(500).json({ error: "server_error" });
   }
 };
 

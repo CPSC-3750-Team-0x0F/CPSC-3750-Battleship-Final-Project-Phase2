@@ -144,10 +144,13 @@ exports.fireShot = async (req, res) => {
       return res.status(404).json({ error: "not_found", message: "player not in game" });
     }
 
-    if (turnRes.rows[0].turn_order !== game.current_turn_index) {
-      await client.query("ROLLBACK");
-      return res.status(400).json({ error: "not_your_turn", message: "it is not your turn" });
-    }
+   // controllers/moveController.js -> exports.fireShot
+
+if (turnRes.rows[0].turn_order !== game.current_turn_index) {
+  await client.query("ROLLBACK");
+  // CHANGE THIS from 400 to 403
+  return res.status(403).json({ error: "not_your_turn", message: "it is not your turn" });
+}
 
     if (shotRow < 0 || shotRow >= game.grid_size || shotCol < 0 || shotCol >= game.grid_size) {
       await client.query("ROLLBACK");

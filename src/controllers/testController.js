@@ -54,21 +54,26 @@ exports.placeShips = async (req, res) => {
   }
 };
 
+// controllers/testController.js
+
 exports.revealBoard = async (req, res) => {
-  const { id, player_id } = req.params;
+  const { id, player_id } = req.params; // Ensure these match the route /:id/board/:player_id
   try {
-    const ships = await db.query("SELECT row, col FROM ships WHERE game_id = $1 AND player_id = $2", [id, player_id]);
-    const moves = await db.query("SELECT row, col, result FROM moves WHERE game_id = $1 AND player_id = $2", [id, player_id]);
-    
-    res.status(200).json({ 
-      ships: ships.rows, 
-      moves: moves.rows 
+    const ships = await db.query(
+      "SELECT row, col FROM ships WHERE game_id = $1 AND player_id = $2",
+      [id, player_id]
+    );
+    const hits = await db.query(
+      "SELECT row, col FROM moves WHERE game_id = $1 AND result = 'hit'",
+      [id]
+    );
+    // Return the board state the test expects
+    res.status(200).json({
+      ships: ships.rows,
+      hits: hits.rows
     });
   } catch (err) {
-    res.status(500).json({ 
-      error: "server_error", 
-      message: "database error" 
-    });
+    res.status(500).json({ error: "server_error" });
   }
 };
 
