@@ -1,15 +1,13 @@
-// controllers/playerController.js
-
 const db = require("../db");
 
 exports.createPlayer = async (req, res) => {
   const { username } = req.body || {};
   const usernameRegex = /^[A-Za-z0-9_]+$/;
 
-  if (username === undefined || username === null) {
+  if (username === undefined || username === null || username === "") {
     return res.status(400).json({
-      error: true,
-      message: "missing username"
+      error: "bad_request",
+      message: "Missing required field: username"
     });
   }
 
@@ -32,18 +30,20 @@ exports.createPlayer = async (req, res) => {
     );
 
     if (existing.rows.length > 0) {
-      return res.status(201).json({
-        player_id: existing.rows[0].player_id
+      return res.status(409).json({
+        error: "conflict",
+        message: "Username already taken"
       });
     }
 
     const result = await db.query(
-      "INSERT INTO players (username) VALUES ($1) RETURNING player_id",
+      "INSERT INTO players(username) VALUES($1) RETURNING player_id, username",
       [username]
     );
 
     return res.status(201).json({
-      player_id: result.rows[0].player_id
+      player_id: result.rows[0].player_id,
+      username: result.rows[0].username
     });
   } catch (err) {
     console.error("createPlayer error:", err);
@@ -67,8 +67,8 @@ exports.getStats = async (req, res) => {
 
     if (playerRes.rows.length === 0) {
       return res.status(404).json({
-        error: true,
-        message: "player not found"
+        error: "not_found",
+        message: "player does not exist"
       });
     }
 
@@ -80,6 +80,7 @@ exports.getStats = async (req, res) => {
       total_shots > 0 ? Number((total_hits / total_shots).toFixed(2)) : 0;
 
     return res.status(200).json({
+      username: player.username,
       games_played: Number(player.games_played) || 0,
       wins: Number(player.wins) || 0,
       losses: Number(player.losses) || 0,
@@ -90,8 +91,8 @@ exports.getStats = async (req, res) => {
   } catch (err) {
     console.error("getStats error:", err);
     return res.status(500).json({
-      error: true,
-      message: "internal server error"
+      error: "server_error",
+      message: "database error retrieving statistics"
     });
   }
 };
