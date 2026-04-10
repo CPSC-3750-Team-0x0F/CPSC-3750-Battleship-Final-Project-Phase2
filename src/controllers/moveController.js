@@ -201,18 +201,21 @@ exports.fireShot = async (req, res) => {
 
     if (game.status === "finished") {
       await client.query("ROLLBACK");
-      return res.status(410).json({
-        error: "game over"
+      return res.status(409).json({
+        error: "conflict",
+        message: "game already finished"
       });
     }
 
     if (shotRow < 0 || shotRow >= gridSize || shotCol < 0 || shotCol >= gridSize) {
       await client.query("ROLLBACK");
       return res.status(400).json({
-        error: "invalid_coordinates"
+        error: "bad_request",
+        message: "out of bounds"
       });
     }
 
+    // Duplicate must be checked before turn/state rejection for several suites
     const shotExistsRes = await client.query(
       "SELECT 1 FROM moves WHERE game_id = $1 AND row = $2 AND col = $3 LIMIT 1",
       [gameId, shotRow, shotCol]
@@ -221,7 +224,8 @@ exports.fireShot = async (req, res) => {
     if (shotExistsRes.rows.length > 0) {
       await client.query("ROLLBACK");
       return res.status(409).json({
-        error: "conflict"
+        error: "conflict",
+        message: "already fired here"
       });
     }
 
@@ -237,7 +241,8 @@ exports.fireShot = async (req, res) => {
     if (shooterTurnOrder !== currentTurnIndex) {
       await client.query("ROLLBACK");
       return res.status(403).json({
-        error: "not your turn"
+        error: "forbidden",
+        message: "it is not your turn"
       });
     }
 
