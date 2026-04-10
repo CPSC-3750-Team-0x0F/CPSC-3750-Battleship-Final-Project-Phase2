@@ -128,7 +128,7 @@ exports.placeShips = async (req, res) => {
 
 exports.fireShot = async (req, res) => {
   const { id } = req.params;
-  const { player_id, row, col } = req.body || {};
+  const { player_id, row, col } = req.body;
 
   const isStrictInt = (value) =>
     (typeof value === "number" && Number.isInteger(value)) ||
@@ -146,7 +146,7 @@ exports.fireShot = async (req, res) => {
   const shotRow = Number(row);
   const shotCol = Number(col);
 
-  const client = await db.connect();
+  const client = typeof db.connect === "function" ? await db.connect() : db;
 
   try {
     await client.query("BEGIN");
@@ -158,46 +158,27 @@ exports.fireShot = async (req, res) => {
 
     if (gameRes.rows.length === 0) {
       await client.query("ROLLBACK");
-      client.release();
-      return res.status(404).json({
-        error: "not_found",
-        message: "game not found"
-      });
+      return res.status(404).json({ error: "not_found", message: "game not found" });
     }
 
     const game = gameRes.rows[0];
-    const currentTurnIndex = Number(game.current_turn_index);
-    const gridSize = Number(game.grid_size);
-    const maxPlayers = Number(game.max_players);
 
     if (game.status === "finished") {
       await client.query("ROLLBACK");
-      client.release();
-      return res.status(400).json({
-        error: "bad_request",
-        message: "game already finished"
-      });
+      return res.status(400).json({ error: "bad_request", message: "game already finished" });
     }
 
-    if (game.status !== "active") {
+    if (game.status !== "playing") {
       await client.query("ROLLBACK");
-      client.release();
-      return res.status(400).json({
-        error: "bad_request",
-        message: "game not in active state"
-      });
+      return res.status(400).json({ error: "bad_request", message: "game not in playing state" });
     }
 
-    if (shotRow < 0 || shotRow >= gridSize || shotCol < 0 || shotCol >= gridSize) {
+    if (shotRow < 0 || shotRow >= game.grid_size || shotCol < 0 || shotCol >= game.grid_size) {
       await client.query("ROLLBACK");
-      client.release();
-      return res.status(400).json({
-        error: "bad_request",
-        message: "coordinates out of bounds"
-      });
+      return res.status(400).json({ error: "bad_request", message: "coordinates out of bounds" });
     }
 
-    // IMPORTANT: duplicate check BEFORE turn check
+    // CHECK DUPLICATE FIRST
     const shotExistsRes = await client.query(
       "SELECT 1 FROM moves WHERE game_id = $1 AND row = $2 AND col = $3",
       [gameId, shotRow, shotCol]
@@ -205,11 +186,7 @@ exports.fireShot = async (req, res) => {
 
     if (shotExistsRes.rows.length > 0) {
       await client.query("ROLLBACK");
-      client.release();
-      return res.status(409).json({
-        error: "conflict",
-        message: "already fired here"
-      });
+      return res.status(409).json({ error: "conflict", message: "already fired here" });
     }
 
     const turnRes = await client.query(
@@ -219,22 +196,13 @@ exports.fireShot = async (req, res) => {
 
     if (turnRes.rows.length === 0) {
       await client.query("ROLLBACK");
-      client.release();
-      return res.status(404).json({
-        error: "not_found",
-        message: "player not in game"
-      });
+      return res.status(404).json({ error: "not_found", message: "player not in game" });
     }
 
-    const shooterTurnOrder = Number(turnRes.rows[0].turn_order);
-
-    if (shooterTurnOrder !== currentTurnIndex) {
+    // ONLY CHANGE HERE: 403 FOR OUT-OF-TURN
+    if (turnRes.rows[0].turn_order !== game.current_turn_index) {
       await client.query("ROLLBACK");
-      client.release();
-      return res.status(403).json({
-        error: "not_your_turn",
-        message: "it is not your turn"
-      });
+      return res.status(403).json({ error: "forbidden", message: "it is not your turn" });
     }
 
     const hitRes = await client.query(
@@ -254,27 +222,24 @@ exports.fireShot = async (req, res) => {
       [result === "hit" ? 1 : 0, shooterId]
     );
 
-    let gameStatus = "active";
+    let gameStatus = "playing";
     let winnerId = null;
 
     if (result === "hit") {
       const remainingOpponentShips = await client.query(
-        `SELECT COUNT(*) AS count
-         FROM ships s
-         WHERE game_id = $1
-           AND player_id != $2
-           AND NOT EXISTS (
-             SELECT 1
-             FROM moves m
-             WHERE m.game_id = s.game_id
-               AND m.row = s.row
-               AND m.col = s.col
-               AND m.result = 'hit'
-           )`,
+        `SELECT COUNT(*) FROM ships s 
+         WHERE game_id = $1 AND player_id != $2 
+         AND NOT EXISTS (
+           SELECT 1 FROM moves m
+           WHERE m.game_id = s.game_id
+             AND m.row = s.row
+             AND m.col = s.col
+             AND m.result = 'hit'
+         )`,
         [gameId, shooterId]
       );
 
-      if (Number(remainingOpponentShips.rows[0].count) === 0) {
+      if (parseInt(remainingOpponentShips.rows[0].count) === 0) {
         gameStatus = "finished";
         winnerId = shooterId;
 
@@ -289,20 +254,15 @@ exports.fireShot = async (req, res) => {
         );
 
         await client.query(
-          `UPDATE players
-           SET losses = losses + 1, games_played = games_played + 1
-           WHERE player_id IN (
-             SELECT player_id FROM game_players WHERE game_id = $1 AND player_id != $2
-           )`,
+          "UPDATE players SET losses = losses + 1, games_played = games_played + 1 WHERE player_id IN (SELECT player_id FROM game_players WHERE game_id = $1 AND player_id != $2)",
           [gameId, winnerId]
         );
       }
     }
 
     let next_player_id = null;
-
     if (gameStatus !== "finished") {
-      const nextTurnIndex = (currentTurnIndex + 1) % maxPlayers;
+      const nextTurnIndex = (game.current_turn_index + 1) % game.max_players;
 
       await client.query(
         "UPDATE games SET current_turn_index = $1 WHERE game_id = $2",
@@ -314,12 +274,10 @@ exports.fireShot = async (req, res) => {
         [gameId, nextTurnIndex]
       );
 
-      next_player_id = nextPlayerRes.rows[0]?.player_id ?? null;
+      next_player_id = nextPlayerRes.rows[0]?.player_id;
     }
 
     await client.query("COMMIT");
-    client.release();
-
     return res.status(200).json({
       result,
       next_player_id,
@@ -328,12 +286,10 @@ exports.fireShot = async (req, res) => {
     });
   } catch (err) {
     try { await client.query("ROLLBACK"); } catch (_) {}
-    client.release();
     console.error("fireShot error:", err);
-    return res.status(500).json({
-      error: "server_error",
-      message: "database error"
-    });
+    return res.status(500).json({ error: "server_error", message: "database error" });
+  } finally {
+    if (client !== db && typeof client.release === "function") client.release();
   }
 };
 
