@@ -128,16 +128,16 @@ exports.placeShips = async (req, res) => {
 
 exports.fireShot = async (req, res) => {
   const { id } = req.params;
-  const { player_id, row, col } = req.body;
+  const { player_id, row, col } = req.body || {};
 
   const isStrictInt = (value) =>
     (typeof value === "number" && Number.isInteger(value)) ||
     (typeof value === "string" && /^-?\d+$/.test(value));
 
   if (!isStrictInt(id) || !isStrictInt(player_id) || !isStrictInt(row) || !isStrictInt(col)) {
-    return res.status(400).json({ 
-      error: "bad_request", 
-      message: "invalid numeric input" 
+    return res.status(400).json({
+      error: "bad_request",
+      message: "invalid numeric input"
     });
   }
 
@@ -146,7 +146,7 @@ exports.fireShot = async (req, res) => {
   const shotRow = Number(row);
   const shotCol = Number(col);
 
-  const client = typeof db.connect === "function" ? await db.connect() : db;
+  const client = await db.connect();
 
   try {
     await client.query("BEGIN");
@@ -158,19 +158,58 @@ exports.fireShot = async (req, res) => {
 
     if (gameRes.rows.length === 0) {
       await client.query("ROLLBACK");
-      return res.status(404).json({ error: "not_found", message: "game not found" });
+      client.release();
+      return res.status(404).json({
+        error: "not_found",
+        message: "game not found"
+      });
     }
 
     const game = gameRes.rows[0];
+    const currentTurnIndex = Number(game.current_turn_index);
+    const gridSize = Number(game.grid_size);
+    const maxPlayers = Number(game.max_players);
 
     if (game.status === "finished") {
       await client.query("ROLLBACK");
-      return res.status(400).json({ error: "bad_request", message: "game already finished" });
+      client.release();
+      return res.status(400).json({
+        error: "bad_request",
+        message: "game already finished"
+      });
     }
 
     if (game.status !== "active") {
       await client.query("ROLLBACK");
-      return res.status(400).json({ error: "bad_request", message: "game not in active state" });
+      client.release();
+      return res.status(400).json({
+        error: "bad_request",
+        message: "game not in active state"
+      });
+    }
+
+    if (shotRow < 0 || shotRow >= gridSize || shotCol < 0 || shotCol >= gridSize) {
+      await client.query("ROLLBACK");
+      client.release();
+      return res.status(400).json({
+        error: "bad_request",
+        message: "coordinates out of bounds"
+      });
+    }
+
+    // IMPORTANT: duplicate check BEFORE turn check
+    const shotExistsRes = await client.query(
+      "SELECT 1 FROM moves WHERE game_id = $1 AND row = $2 AND col = $3",
+      [gameId, shotRow, shotCol]
+    );
+
+    if (shotExistsRes.rows.length > 0) {
+      await client.query("ROLLBACK");
+      client.release();
+      return res.status(409).json({
+        error: "conflict",
+        message: "already fired here"
+      });
     }
 
     const turnRes = await client.query(
@@ -180,30 +219,22 @@ exports.fireShot = async (req, res) => {
 
     if (turnRes.rows.length === 0) {
       await client.query("ROLLBACK");
-      return res.status(404).json({ error: "not_found", message: "player not in game" });
+      client.release();
+      return res.status(404).json({
+        error: "not_found",
+        message: "player not in game"
+      });
     }
 
-   // controllers/moveController.js -> exports.fireShot
+    const shooterTurnOrder = Number(turnRes.rows[0].turn_order);
 
-if (turnRes.rows[0].turn_order !== game.current_turn_index) {
-  await client.query("ROLLBACK");
-  // CHANGE THIS from 400 to 403
-  return res.status(403).json({ error: "not_your_turn", message: "it is not your turn" });
-}
-
-    if (shotRow < 0 || shotRow >= game.grid_size || shotCol < 0 || shotCol >= game.grid_size) {
+    if (shooterTurnOrder !== currentTurnIndex) {
       await client.query("ROLLBACK");
-      return res.status(400).json({ error: "bad_request", message: "coordinates out of bounds" });
-    }
-
-    const shotExistsRes = await client.query(
-      "SELECT 1 FROM moves WHERE game_id = $1 AND row = $2 AND col = $3",
-      [gameId, shotRow, shotCol]
-    );
-
-    if (shotExistsRes.rows.length > 0) {
-      await client.query("ROLLBACK");
-      return res.status(409).json({ error: "conflict", message: "already fired here" });
+      client.release();
+      return res.status(403).json({
+        error: "not_your_turn",
+        message: "it is not your turn"
+      });
     }
 
     const hitRes = await client.query(
@@ -228,42 +259,81 @@ if (turnRes.rows[0].turn_order !== game.current_turn_index) {
 
     if (result === "hit") {
       const remainingOpponentShips = await client.query(
-        `SELECT COUNT(*) FROM ships s 
-         WHERE game_id = $1 AND player_id != $2 
-         AND NOT EXISTS (SELECT 1 FROM moves m WHERE m.game_id = s.game_id AND m.row = s.row AND m.col = s.col AND m.result = 'hit')`,
+        `SELECT COUNT(*) AS count
+         FROM ships s
+         WHERE game_id = $1
+           AND player_id != $2
+           AND NOT EXISTS (
+             SELECT 1
+             FROM moves m
+             WHERE m.game_id = s.game_id
+               AND m.row = s.row
+               AND m.col = s.col
+               AND m.result = 'hit'
+           )`,
         [gameId, shooterId]
       );
 
-      if (parseInt(remainingOpponentShips.rows[0].count) === 0) {
+      if (Number(remainingOpponentShips.rows[0].count) === 0) {
         gameStatus = "finished";
         winnerId = shooterId;
-        await client.query("UPDATE games SET status = 'finished', winner_id = $1 WHERE game_id = $2", [winnerId, gameId]);
-        await client.query("UPDATE players SET wins = wins + 1, games_played = games_played + 1 WHERE player_id = $1", [winnerId]);
+
         await client.query(
-          "UPDATE players SET losses = losses + 1, games_played = games_played + 1 WHERE player_id IN (SELECT player_id FROM game_players WHERE game_id = $1 AND player_id != $2)",
+          "UPDATE games SET status = 'finished', winner_id = $1 WHERE game_id = $2",
+          [winnerId, gameId]
+        );
+
+        await client.query(
+          "UPDATE players SET wins = wins + 1, games_played = games_played + 1 WHERE player_id = $1",
+          [winnerId]
+        );
+
+        await client.query(
+          `UPDATE players
+           SET losses = losses + 1, games_played = games_played + 1
+           WHERE player_id IN (
+             SELECT player_id FROM game_players WHERE game_id = $1 AND player_id != $2
+           )`,
           [gameId, winnerId]
         );
       }
     }
 
     let next_player_id = null;
+
     if (gameStatus !== "finished") {
-      const nextTurnIndex = (game.current_turn_index + 1) % game.max_players;
-      await client.query("UPDATE games SET current_turn_index = $1 WHERE game_id = $2", [nextTurnIndex, gameId]);
+      const nextTurnIndex = (currentTurnIndex + 1) % maxPlayers;
+
+      await client.query(
+        "UPDATE games SET current_turn_index = $1 WHERE game_id = $2",
+        [nextTurnIndex, gameId]
+      );
+
       const nextPlayerRes = await client.query(
         "SELECT player_id FROM game_players WHERE game_id = $1 AND turn_order = $2",
         [gameId, nextTurnIndex]
       );
-      next_player_id = nextPlayerRes.rows[0]?.player_id;
+
+      next_player_id = nextPlayerRes.rows[0]?.player_id ?? null;
     }
 
     await client.query("COMMIT");
-    return res.status(200).json({ result, next_player_id, game_status: gameStatus, winner_id: winnerId });
+    client.release();
+
+    return res.status(200).json({
+      result,
+      next_player_id,
+      game_status: gameStatus,
+      winner_id: winnerId
+    });
   } catch (err) {
     try { await client.query("ROLLBACK"); } catch (_) {}
-    return res.status(500).json({ error: "server_error", message: "database error" });
-  } finally {
-    if (client !== db && typeof client.release === "function") client.release();
+    client.release();
+    console.error("fireShot error:", err);
+    return res.status(500).json({
+      error: "server_error",
+      message: "database error"
+    });
   }
 };
 
