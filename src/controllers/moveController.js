@@ -44,13 +44,13 @@ exports.placeShips = async (req, res) => {
 
     const { grid_size, max_players, status } = gameResult.rows[0];
 
-    if (status !== "waiting_setup") {
-      await client.query("ROLLBACK");
-      return res.status(409).json({
-        error: "conflict",
-        message: "ship placement closed"
-      });
-    }
+  if (status !== "waiting_setup" && status !== "waiting") {
+    await client.query("ROLLBACK");
+    return res.status(409).json({
+      error: "conflict",
+      message: "ship placement closed"
+    });
+  }
 
     const playerInGame = await client.query(
       "SELECT 1 FROM game_players WHERE game_id = $1 AND player_id = $2",
@@ -201,21 +201,18 @@ exports.fireShot = async (req, res) => {
 
     if (game.status === "finished") {
       await client.query("ROLLBACK");
-      return res.status(409).json({
-        error: "conflict",
-        message: "game already finished"
+      return res.status(410).json({
+        error: "game over"
       });
     }
 
     if (shotRow < 0 || shotRow >= gridSize || shotCol < 0 || shotCol >= gridSize) {
       await client.query("ROLLBACK");
       return res.status(400).json({
-        error: "bad_request",
-        message: "out of bounds"
+        error: "invalid_coordinates"
       });
     }
 
-    // Duplicate must be checked before turn/state rejection for several suites
     const shotExistsRes = await client.query(
       "SELECT 1 FROM moves WHERE game_id = $1 AND row = $2 AND col = $3 LIMIT 1",
       [gameId, shotRow, shotCol]
@@ -224,8 +221,7 @@ exports.fireShot = async (req, res) => {
     if (shotExistsRes.rows.length > 0) {
       await client.query("ROLLBACK");
       return res.status(409).json({
-        error: "conflict",
-        message: "already fired here"
+        error: "conflict"
       });
     }
 
@@ -234,16 +230,14 @@ exports.fireShot = async (req, res) => {
     if (game.status !== "playing") {
       await client.query("ROLLBACK");
       return res.status(403).json({
-        error: "forbidden",
-        message: "game not in playing state"
+        error: "forbidden"
       });
     }
 
     if (shooterTurnOrder !== currentTurnIndex) {
       await client.query("ROLLBACK");
       return res.status(403).json({
-        error: "forbidden",
-        message: "it is not your turn"
+        error: "not your turn"
       });
     }
 
