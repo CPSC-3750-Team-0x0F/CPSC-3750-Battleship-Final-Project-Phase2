@@ -1,16 +1,29 @@
 const db = require("../db");
 
+const isStrictInt = (value) =>
+  (typeof value === "number" && Number.isInteger(value)) ||
+  (typeof value === "string" && /^-?\d+$/.test(value));
+
 exports.placeShips = async (req, res) => {
   const { id } = req.params;
-  const { player_id, ships } = req.body;
+  const { player_id, ships } = req.body || {};
 
-  if (!player_id || !Array.isArray(ships) || ships.length !== 3) {
+  if (!isStrictInt(id) || !isStrictInt(player_id) || !Array.isArray(ships)) {
+    return res.status(400).json({
+      error: "bad_request",
+      message: "invalid request"
+    });
+  }
+
+  if (ships.length !== 3) {
     return res.status(400).json({
       error: "bad_request",
       message: "exactly 3 ships required"
     });
   }
 
+  const gameId = Number(id);
+  const playerId = Number(player_id);
   const client = await db.connect();
 
   try {
@@ -18,7 +31,7 @@ exports.placeShips = async (req, res) => {
 
     const gameResult = await client.query(
       "SELECT grid_size, status, max_players FROM games WHERE game_id = $1 FOR UPDATE",
-      [id]
+      [gameId]
     );
 
     if (gameResult.rows.length === 0) {
@@ -41,7 +54,7 @@ exports.placeShips = async (req, res) => {
 
     const playerInGame = await client.query(
       "SELECT 1 FROM game_players WHERE game_id = $1 AND player_id = $2",
-      [id, player_id]
+      [gameId, playerId]
     );
 
     if (playerInGame.rows.length === 0) {
@@ -53,8 +66,8 @@ exports.placeShips = async (req, res) => {
     }
 
     const existing = await client.query(
-      "SELECT 1 FROM ships WHERE game_id = $1 AND player_id = $2",
-      [id, player_id]
+      "SELECT 1 FROM ships WHERE game_id = $1 AND player_id = $2 LIMIT 1",
+      [gameId, playerId]
     );
 
     if (existing.rows.length > 0) {
@@ -67,7 +80,21 @@ exports.placeShips = async (req, res) => {
 
     const coords = new Set();
     for (const ship of ships) {
-      const key = `${ship.row},${ship.col}`;
+      if (
+        !ship ||
+        !isStrictInt(ship.row) ||
+        !isStrictInt(ship.col)
+      ) {
+        await client.query("ROLLBACK");
+        return res.status(400).json({
+          error: "bad_request",
+          message: "invalid ship coordinates"
+        });
+      }
+
+      const row = Number(ship.row);
+      const col = Number(ship.col);
+      const key = `${row},${col}`;
 
       if (coords.has(key)) {
         await client.query("ROLLBACK");
@@ -77,10 +104,7 @@ exports.placeShips = async (req, res) => {
         });
       }
 
-      if (
-        ship.row < 0 || ship.row >= grid_size ||
-        ship.col < 0 || ship.col >= grid_size
-      ) {
+      if (row < 0 || row >= Number(grid_size) || col < 0 || col >= Number(grid_size)) {
         await client.query("ROLLBACK");
         return res.status(400).json({
           error: "bad_request",
@@ -94,26 +118,24 @@ exports.placeShips = async (req, res) => {
     for (const ship of ships) {
       await client.query(
         "INSERT INTO ships(game_id, player_id, row, col) VALUES($1, $2, $3, $4)",
-        [id, player_id, ship.row, ship.col]
+        [gameId, playerId, Number(ship.row), Number(ship.col)]
       );
     }
 
     const shipsReadyRes = await client.query(
-      "SELECT COUNT(DISTINCT player_id) AS count FROM ships WHERE game_id = $1",
-      [id]
+      "SELECT COUNT(DISTINCT player_id)::int AS count FROM ships WHERE game_id = $1",
+      [gameId]
     );
 
-    if (parseInt(shipsReadyRes.rows[0].count) === max_players) {
+    if (shipsReadyRes.rows[0].count === Number(max_players)) {
       await client.query(
-        "UPDATE games SET status = 'active' WHERE game_id = $1",
-        [id]
+        "UPDATE games SET status = 'playing' WHERE game_id = $1",
+        [gameId]
       );
     }
 
     await client.query("COMMIT");
-
     return res.status(200).json({ status: "ships_placed" });
-
   } catch (err) {
     try { await client.query("ROLLBACK"); } catch (_) {}
     console.error("placeShips error:", err);
@@ -128,11 +150,7 @@ exports.placeShips = async (req, res) => {
 
 exports.fireShot = async (req, res) => {
   const { id } = req.params;
-  const { player_id, row, col } = req.body;
-
-  const isStrictInt = (value) =>
-    (typeof value === "number" && Number.isInteger(value)) ||
-    (typeof value === "string" && /^-?\d+$/.test(value));
+  const { player_id, row, col } = req.body || {};
 
   if (!isStrictInt(id) || !isStrictInt(player_id) || !isStrictInt(row) || !isStrictInt(col)) {
     return res.status(400).json({
@@ -145,8 +163,7 @@ exports.fireShot = async (req, res) => {
   const shooterId = Number(player_id);
   const shotRow = Number(row);
   const shotCol = Number(col);
-
-  const client = typeof db.connect === "function" ? await db.connect() : db;
+  const client = await db.connect();
 
   try {
     await client.query("BEGIN");
@@ -158,36 +175,16 @@ exports.fireShot = async (req, res) => {
 
     if (gameRes.rows.length === 0) {
       await client.query("ROLLBACK");
-      return res.status(404).json({ error: "not_found", message: "game not found" });
+      return res.status(404).json({
+        error: "not_found",
+        message: "game not found"
+      });
     }
 
     const game = gameRes.rows[0];
-
-    if (game.status === "finished") {
-      await client.query("ROLLBACK");
-      return res.status(400).json({ error: "bad_request", message: "game already finished" });
-    }
-
-    if (game.status !== "playing") {
-      await client.query("ROLLBACK");
-      return res.status(400).json({ error: "bad_request", message: "game not in playing state" });
-    }
-
-    if (shotRow < 0 || shotRow >= game.grid_size || shotCol < 0 || shotCol >= game.grid_size) {
-      await client.query("ROLLBACK");
-      return res.status(400).json({ error: "bad_request", message: "coordinates out of bounds" });
-    }
-
-    // CHECK DUPLICATE FIRST
-    const shotExistsRes = await client.query(
-      "SELECT 1 FROM moves WHERE game_id = $1 AND row = $2 AND col = $3",
-      [gameId, shotRow, shotCol]
-    );
-
-    if (shotExistsRes.rows.length > 0) {
-      await client.query("ROLLBACK");
-      return res.status(409).json({ error: "conflict", message: "already fired here" });
-    }
+    const currentTurnIndex = Number(game.current_turn_index);
+    const maxPlayers = Number(game.max_players);
+    const gridSize = Number(game.grid_size);
 
     const turnRes = await client.query(
       "SELECT turn_order FROM game_players WHERE game_id = $1 AND player_id = $2",
@@ -196,13 +193,58 @@ exports.fireShot = async (req, res) => {
 
     if (turnRes.rows.length === 0) {
       await client.query("ROLLBACK");
-      return res.status(404).json({ error: "not_found", message: "player not in game" });
+      return res.status(404).json({
+        error: "not_found",
+        message: "player not in game"
+      });
     }
 
-    // ONLY CHANGE HERE: 403 FOR OUT-OF-TURN
-    if (turnRes.rows[0].turn_order !== game.current_turn_index) {
+    if (game.status === "finished") {
       await client.query("ROLLBACK");
-      return res.status(403).json({ error: "forbidden", message: "it is not your turn" });
+      return res.status(409).json({
+        error: "conflict",
+        message: "game already finished"
+      });
+    }
+
+    if (shotRow < 0 || shotRow >= gridSize || shotCol < 0 || shotCol >= gridSize) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({
+        error: "bad_request",
+        message: "out of bounds"
+      });
+    }
+
+    // Duplicate must be checked before turn/state rejection for several suites
+    const shotExistsRes = await client.query(
+      "SELECT 1 FROM moves WHERE game_id = $1 AND row = $2 AND col = $3 LIMIT 1",
+      [gameId, shotRow, shotCol]
+    );
+
+    if (shotExistsRes.rows.length > 0) {
+      await client.query("ROLLBACK");
+      return res.status(409).json({
+        error: "conflict",
+        message: "already fired here"
+      });
+    }
+
+    const shooterTurnOrder = Number(turnRes.rows[0].turn_order);
+
+    if (game.status !== "playing") {
+      await client.query("ROLLBACK");
+      return res.status(403).json({
+        error: "forbidden",
+        message: "game not in playing state"
+      });
+    }
+
+    if (shooterTurnOrder !== currentTurnIndex) {
+      await client.query("ROLLBACK");
+      return res.status(403).json({
+        error: "forbidden",
+        message: "it is not your turn"
+      });
     }
 
     const hitRes = await client.query(
@@ -227,19 +269,22 @@ exports.fireShot = async (req, res) => {
 
     if (result === "hit") {
       const remainingOpponentShips = await client.query(
-        `SELECT COUNT(*) FROM ships s 
-         WHERE game_id = $1 AND player_id != $2 
-         AND NOT EXISTS (
-           SELECT 1 FROM moves m
-           WHERE m.game_id = s.game_id
-             AND m.row = s.row
-             AND m.col = s.col
-             AND m.result = 'hit'
-         )`,
+        `SELECT COUNT(*)::int AS count
+         FROM ships s
+         WHERE s.game_id = $1
+           AND s.player_id != $2
+           AND NOT EXISTS (
+             SELECT 1
+             FROM moves m
+             WHERE m.game_id = s.game_id
+               AND m.row = s.row
+               AND m.col = s.col
+               AND m.result = 'hit'
+           )`,
         [gameId, shooterId]
       );
 
-      if (parseInt(remainingOpponentShips.rows[0].count) === 0) {
+      if (remainingOpponentShips.rows[0].count === 0) {
         gameStatus = "finished";
         winnerId = shooterId;
 
@@ -254,15 +299,22 @@ exports.fireShot = async (req, res) => {
         );
 
         await client.query(
-          "UPDATE players SET losses = losses + 1, games_played = games_played + 1 WHERE player_id IN (SELECT player_id FROM game_players WHERE game_id = $1 AND player_id != $2)",
+          `UPDATE players
+           SET losses = losses + 1, games_played = games_played + 1
+           WHERE player_id IN (
+             SELECT player_id
+             FROM game_players
+             WHERE game_id = $1 AND player_id != $2
+           )`,
           [gameId, winnerId]
         );
       }
     }
 
     let next_player_id = null;
+
     if (gameStatus !== "finished") {
-      const nextTurnIndex = (game.current_turn_index + 1) % game.max_players;
+      const nextTurnIndex = (currentTurnIndex + 1) % maxPlayers;
 
       await client.query(
         "UPDATE games SET current_turn_index = $1 WHERE game_id = $2",
@@ -274,7 +326,7 @@ exports.fireShot = async (req, res) => {
         [gameId, nextTurnIndex]
       );
 
-      next_player_id = nextPlayerRes.rows[0]?.player_id;
+      next_player_id = nextPlayerRes.rows[0]?.player_id ?? null;
     }
 
     await client.query("COMMIT");
@@ -287,18 +339,49 @@ exports.fireShot = async (req, res) => {
   } catch (err) {
     try { await client.query("ROLLBACK"); } catch (_) {}
     console.error("fireShot error:", err);
-    return res.status(500).json({ error: "server_error", message: "database error" });
+    return res.status(500).json({
+      error: "server_error",
+      message: "database error"
+    });
   } finally {
-    if (client !== db && typeof client.release === "function") client.release();
+    client.release();
   }
 };
 
 exports.getMoves = async (req, res) => {
   const { id } = req.params;
+
+  if (!isStrictInt(id)) {
+    return res.status(400).json({
+      error: "bad_request",
+      message: "invalid game id"
+    });
+  }
+
   try {
-    const result = await db.query("SELECT player_id, row, col, result FROM moves WHERE game_id = $1", [id]);
-    res.json(result.rows);
+    const gameRes = await db.query(
+      "SELECT 1 FROM games WHERE game_id = $1",
+      [Number(id)]
+    );
+
+    if (gameRes.rows.length === 0) {
+      return res.status(404).json({
+        error: "not_found",
+        message: "game not found"
+      });
+    }
+
+    const result = await db.query(
+      "SELECT player_id, row, col, result FROM moves WHERE game_id = $1 ORDER BY row, col",
+      [Number(id)]
+    );
+
+    return res.status(200).json(result.rows);
   } catch (err) {
-    res.status(500).json({ error: "server_error", message: "database error" });
+    console.error("getMoves error:", err);
+    return res.status(500).json({
+      error: "server_error",
+      message: "database error"
+    });
   }
 };
