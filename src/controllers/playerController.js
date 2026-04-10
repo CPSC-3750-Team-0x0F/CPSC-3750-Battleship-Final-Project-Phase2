@@ -4,7 +4,7 @@ exports.createPlayer = async (req, res) => {
   const { username } = req.body || {};
   const usernameRegex = /^[A-Za-z0-9_]+$/;
 
-  if (username === undefined || username === null || username === "") {
+  if (username === undefined || username === null) {
     return res.status(400).json({
       error: "bad_request",
       message: "Missing required field: username"
@@ -30,20 +30,18 @@ exports.createPlayer = async (req, res) => {
     );
 
     if (existing.rows.length > 0) {
-      return res.status(409).json({
-        error: "conflict",
-        message: "Username already taken"
+      return res.status(201).json({
+        player_id: existing.rows[0].player_id
       });
     }
 
     const result = await db.query(
-      "INSERT INTO players(username) VALUES($1) RETURNING player_id, username",
+      "INSERT INTO players (username) VALUES ($1) RETURNING player_id",
       [username]
     );
 
     return res.status(201).json({
-      player_id: result.rows[0].player_id,
-      username: result.rows[0].username
+      player_id: result.rows[0].player_id
     });
   } catch (err) {
     console.error("createPlayer error:", err);
