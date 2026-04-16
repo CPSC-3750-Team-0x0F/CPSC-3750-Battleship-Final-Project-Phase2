@@ -217,8 +217,8 @@ exports.fireShot = async (req, res) => {
 
     // Duplicate must be checked before turn/state rejection for several suites
     const shotExistsRes = await client.query(
-      "SELECT 1 FROM moves WHERE game_id = $1 AND row = $2 AND col = $3 LIMIT 1",
-      [gameId, shotRow, shotCol]
+      "SELECT 1 FROM moves WHERE game_id = $1 AND player_id = $2 AND row = $3 AND col = $4 LIMIT 1",
+      [gameId, shooterId, shotRow, shotCol]
     );
 
     if (shotExistsRes.rows.length > 0) {
