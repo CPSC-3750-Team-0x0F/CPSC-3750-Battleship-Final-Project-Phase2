@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Battleship Client</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>Battleship Client</h1>
+    <p class="subtitle">Frontend for your final Battleship project</p>
+
+    <section class="card">
+      <h2>API Settings</h2>
+      <label for="apiBase">API Base URL</label>
+      <input
+        type="text"
+        id="apiBase"
+        value="http://localhost:3000/api"
+        placeholder="http://localhost:3000/api"
+      />
+      <small>
+        Change this to your Render URL later, like:
+        https://your-app.onrender.com/api
+      </small>
+    </section>
+
+    <section class="card">
+      <h2>Create Player</h2>
+      <label for="username">Username</label>
+      <input type="text" id="username" placeholder="Enter username" />
+      <button onclick="createPlayer()">Create Player</button>
+    </section>
+
+    <section class="card">
+      <h2>Get Player Stats</h2>
+      <label for="statsPlayerId">Player ID</label>
+      <input type="number" id="statsPlayerId" placeholder="Player ID" />
+      <button onclick="getPlayerStats()">Get Stats</button>
+    </section>
+
+    <section class="card">
+      <h2>Create Game</h2>
+      <label for="creatorId">Creator Player ID</label>
+      <input type="number" id="creatorId" placeholder="Player ID" />
+
+      <label for="gridSize">Grid Size</label>
+      <input type="number" id="gridSize" placeholder="Grid Size" value="10" />
+
+      <button onclick="createGame()">Create Game</button>
+    </section>
+
+    <section class="card">
+      <h2>Join Game</h2>
+      <label for="joinGameId">Game ID</label>
+      <input type="number" id="joinGameId" placeholder="Game ID" />
+
+      <label for="joinPlayerId">Player ID</label>
+      <input type="number" id="joinPlayerId" placeholder="Player ID" />
+
+      <button onclick="joinGame()">Join Game</button>
+    </section>
+
+    <section class="card">
+      <h2>Get Game Info</h2>
+      <label for="gameInfoId">Game ID</label>
+      <input type="number" id="gameInfoId" placeholder="Game ID" />
+      <button onclick="getGameInfo()">Get Game Info</button>
+    </section>
+
+    <section class="card">
+      <h2>Place Ships</h2>
+      <label for="placeGameId">Game ID</label>
+      <input type="number" id="placeGameId" placeholder="Game ID" />
+
+      <label for="placePlayerId">Player ID</label>
+      <input type="number" id="placePlayerId" placeholder="Player ID" />
+
+      <label for="shipsJson">Ships JSON</label>
+      <textarea id="shipsJson" rows="8" placeholder='[{"row":0,"col":0},{"row":1,"col":1},{"row":2,"col":2}]'></textarea>
+
+      <button onclick="placeShips()">Place Ships</button>
+    </section>
+
+    <section class="card">
+      <h2>Fire Shot</h2>
+      <label for="fireGameId">Game ID</label>
+      <input type="number" id="fireGameId" placeholder="Game ID" />
+
+      <label for="firePlayerId">Player ID</label>
+      <input type="number" id="firePlayerId" placeholder="Player ID" />
+
+      <label for="fireRow">Row</label>
+      <input type="number" id="fireRow" placeholder="Row" />
+
+      <label for="fireCol">Col</label>
+      <input type="number" id="fireCol" placeholder="Col" />
+
+      <button onclick="fireShot()">Fire Shot</button>
+    </section>
+
+    <section class="card">
+      <h2>Get Board (Test Mode)</h2>
+      <label for="boardGameId">Game ID</label>
+      <input type="number" id="boardGameId" placeholder="Game ID" />
+
+      <label for="boardPlayerId">Player ID</label>
+      <input type="number" id="boardPlayerId" placeholder="Player ID" />
+
+      <button onclick="getBoard()">Get Board</button>
+    </section>
+
+    <section class="card">
+      <h2>Reset Database</h2>
+      <button class="danger" onclick="resetDatabase()">POST /api/reset</button>
+    </section>
+
+    <section class="card">
+      <h2>Response Output</h2>
+      <pre id="output">Responses will show here...</pre>
+    </section>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
