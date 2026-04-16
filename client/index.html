@@ -2,12 +2,12 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Battleship Online</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div class="container">
-
     <!-- LANDING VIEW -->
     <section id="landingView">
       <h1>Battleship Online</h1>
@@ -24,7 +24,7 @@
         </div>
       </div>
 
-      <div id="status"></div>
+      <div id="status" class="status-text"></div>
     </section>
 
     <!-- GAME VIEW -->
@@ -32,52 +32,33 @@
       <div class="topbar">
         <div>
           <h1 class="game-title">Battleship Match</h1>
-          <p id="gameStatusText" class="subtitle">Waiting for game data...</p>
+          <p id="gameStatusOnly" class="subtitle left-align">Waiting for game data...</p>
         </div>
-        <button class="back-btn" onclick="goHome()">Back</button>
+        <button class="back-btn secondary-btn" onclick="goHome()">Back</button>
       </div>
 
-      <div class="info-panel">
-        <div class="info-box">
-          <span class="label">Username</span>
-          <span id="playerName">-</span>
-        </div>
-        <div class="info-box">
-          <span class="label">Player ID</span>
-          <span id="playerIdText">-</span>
-        </div>
-        <div class="info-box">
-          <span class="label">Game ID</span>
-          <span id="gameIdText">-</span>
-        </div>
-        <div class="info-box">
-          <span class="label">Turn</span>
-          <span id="turnText">-</span>
-        </div>
+      <div class="turn-strip">
+        <div id="youTurnBadge" class="turn-badge">You</div>
+        <div id="opponentTurnBadge" class="turn-badge">Opponent</div>
       </div>
-
-      <div class="game-actions">
-        <button onclick="submitDefaultShips()">Place Ships</button>
-        <button onclick="refreshGameState()">Refresh Game</button>
-        </div>
 
       <div class="boards">
         <div class="board-panel">
-          <h2>Your Board</h2>
+          <h2 id="yourBoardLabel">Your Board</h2>
           <div id="playerBoard" class="board"></div>
         </div>
 
         <div class="board-panel">
-          <h2>Enemy Board</h2>
+          <h2 id="enemyBoardLabel">Opponent Board</h2>
           <div id="enemyBoard" class="board"></div>
         </div>
       </div>
 
       <div class="game-actions">
-        <button onclick="refreshGameState()">Refresh Game</button>
+        <button id="placeShipsBtn" class="hidden" onclick="submitDefaultShips()">Place Ships</button>
+        <button class="secondary-btn" onclick="refreshGameState()">Refresh Game</button>
       </div>
     </section>
-
   </div>
 
   <script src="script.js"></script>

@@ -4,6 +4,8 @@ let currentPlayerId = null;
 let currentGameId = null;
 let currentUsername = "";
 let currentGameData = null;
+let currentTurnOrder = null;
+let pollInterval = null;
 
 function setStatus(msg) {
   document.getElementById("status").textContent = msg;
@@ -17,22 +19,42 @@ function showLanding() {
 function showGame() {
   document.getElementById("landingView").classList.add("hidden");
   document.getElementById("gameView").classList.remove("hidden");
+  startPolling();
 }
 
 function goHome() {
+  stopPolling();
   showLanding();
+}
+
+function startPolling() {
+  stopPolling();
+  pollInterval = setInterval(() => {
+    if (currentGameId) {
+      refreshGameState(true);
+    }
+  }, 2000);
+}
+
+function stopPolling() {
+  if (pollInterval) {
+    clearInterval(pollInterval);
+    pollInterval = null;
+  }
 }
 
 function saveSession() {
   localStorage.setItem("battleship_username", currentUsername);
   localStorage.setItem("battleship_player_id", currentPlayerId);
   localStorage.setItem("battleship_game_id", currentGameId);
+  localStorage.setItem("battleship_turn_order", currentTurnOrder ?? "");
 }
 
 function loadSession() {
   const savedUsername = localStorage.getItem("battleship_username");
   const savedPlayerId = localStorage.getItem("battleship_player_id");
   const savedGameId = localStorage.getItem("battleship_game_id");
+  const savedTurnOrder = localStorage.getItem("battleship_turn_order");
 
   if (savedUsername) {
     document.getElementById("username").value = savedUsername;
@@ -46,6 +68,10 @@ function loadSession() {
   if (savedGameId) {
     currentGameId = Number(savedGameId);
     document.getElementById("gameId").value = savedGameId;
+  }
+
+  if (savedTurnOrder !== null && savedTurnOrder !== "") {
+    currentTurnOrder = Number(savedTurnOrder);
   }
 }
 
@@ -76,6 +102,7 @@ async function createGame() {
   try {
     currentUsername = username;
     currentPlayerId = await createPlayer(username);
+    currentTurnOrder = 0;
 
     const gameRes = await fetch(`${API_BASE}/games`, {
       method: "POST",
@@ -132,6 +159,7 @@ async function joinGame() {
     }
 
     currentGameId = Number(gameId);
+    currentTurnOrder = Number(joinData.turn_order);
     saveSession();
     setStatus(`Joined game ${gameId}`);
 
@@ -168,16 +196,7 @@ function buildBoard(elementId, clickable = false) {
   }
 }
 
-function markCell(boardId, row, col, className) {
-  const index = row * 10 + col;
-  const board = document.getElementById(boardId);
-  const cell = board.children[index];
-  if (cell) {
-    cell.classList.add(className);
-  }
-}
-
-async function refreshGameState() {
+async function refreshGameState(silent = false) {
   if (!currentGameId) return;
 
   try {
@@ -190,53 +209,109 @@ async function refreshGameState() {
 
     currentGameData = data;
     renderGameInfo(data);
-    buildBoardsFromState(data);
+    buildBoards();
   } catch (err) {
-    document.getElementById("gameStatusText").textContent = err.message;
+    if (!silent) {
+      document.getElementById("gameStatusOnly").textContent = err.message;
+    }
   }
 }
 
 function renderGameInfo(game) {
-  document.getElementById("playerName").textContent = currentUsername || "-";
-  document.getElementById("playerIdText").textContent = currentPlayerId || "-";
-  document.getElementById("gameIdText").textContent = currentGameId || "-";
-
   const status = game.status || "unknown";
-  const turnIndex = game.current_turn_index ?? "-";
+  const activePlayers = Number(game.active_players || 0);
+  const maxPlayers = Number(game.max_players || 0);
+  const currentTurnIndex = Number(game.current_turn_index ?? -1);
 
-  document.getElementById("turnText").textContent = `Turn Order ${turnIndex}`;
-  document.getElementById("gameStatusText").textContent =
-    `Status: ${status} | Players: ${game.active_players}/${game.max_players}`;
-}
+  document.getElementById("yourBoardLabel").textContent = `${currentUsername}'s Board`;
+  document.getElementById("enemyBoardLabel").textContent = "Opponent Board";
 
-function buildBoardsFromState(game) {
-  buildBoard("playerBoard", false);
-  buildBoard("enemyBoard", true);
+  let message = `Game status: ${status} | Players: ${activePlayers}/${maxPlayers}`;
 
-  if (Array.isArray(game.ships)) {
-    game.ships.forEach((ship) => {
-      const ownerId = ship.player_id;
-      const row = ship.row;
-      const col = ship.col;
-
-      if (Number(ownerId) === Number(currentPlayerId)) {
-        markCell("playerBoard", row, col, "ship");
-      }
-    });
+  if (status === "waiting_setup" && activePlayers < maxPlayers) {
+    message = "Waiting for another player to join...";
   }
 
-  if (Array.isArray(game.moves)) {
-    game.moves.forEach((move) => {
-      const row = move.row;
-      const col = move.col;
-      const hitClass = move.hit ? "hit" : "miss";
+  if (status === "waiting_setup" && activePlayers === maxPlayers) {
+    message = "Place your ships!";
+  }
 
-      if (Number(move.player_id) === Number(currentPlayerId)) {
-        markCell("enemyBoard", row, col, hitClass);
-      } else {
-        markCell("playerBoard", row, col, hitClass);
-      }
+  if (status === "playing") {
+    message = currentTurnOrder === currentTurnIndex ? "Your turn" : "Opponent's turn";
+  }
+
+  if (status === "finished") {
+    message = "Game finished";
+  }
+
+  document.getElementById("gameStatusOnly").textContent = message;
+
+  const placeBtn = document.getElementById("placeShipsBtn");
+  if (status === "waiting_setup" && activePlayers === maxPlayers) {
+    placeBtn.classList.remove("hidden");
+  } else {
+    placeBtn.classList.add("hidden");
+  }
+
+  updateTurnBadges(currentTurnIndex, status);
+}
+
+function updateTurnBadges(currentTurnIndex, status) {
+  const youBadge = document.getElementById("youTurnBadge");
+  const opponentBadge = document.getElementById("opponentTurnBadge");
+
+  youBadge.classList.remove("active");
+  opponentBadge.classList.remove("active");
+
+  if (status !== "playing") {
+    return;
+  }
+
+  if (Number(currentTurnOrder) === Number(currentTurnIndex)) {
+    youBadge.classList.add("active");
+  } else {
+    opponentBadge.classList.add("active");
+  }
+}
+
+function buildBoards() {
+  const canFire =
+    currentGameData &&
+    currentGameData.status === "playing" &&
+    Number(currentTurnOrder) === Number(currentGameData.current_turn_index);
+
+  buildBoard("playerBoard", false);
+  buildBoard("enemyBoard", canFire);
+}
+
+async function submitDefaultShips() {
+  if (!currentGameId || !currentPlayerId) return;
+
+  try {
+    const response = await fetch(`${API_BASE}/games/${currentGameId}/place`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        player_id: currentPlayerId,
+        ships: [
+          { row: 0, col: 0 },
+          { row: 1, col: 1 },
+          { row: 2, col: 2 }
+        ]
+      })
     });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || data.error || "Ship placement failed");
+    }
+
+    document.getElementById("gameStatusOnly").textContent =
+      "Ships placed. Waiting for the other player...";
+    await refreshGameState();
+  } catch (err) {
+    document.getElementById("gameStatusOnly").textContent = err.message;
   }
 }
 
@@ -260,12 +335,12 @@ async function fireShot(row, col) {
       throw new Error(data.message || data.error || "Shot failed");
     }
 
-    document.getElementById("gameStatusText").textContent =
+    document.getElementById("gameStatusOnly").textContent =
       `Shot result: ${data.result} | Game: ${data.game_status}`;
 
     await refreshGameState();
   } catch (err) {
-    document.getElementById("gameStatusText").textContent = err.message;
+    document.getElementById("gameStatusOnly").textContent = err.message;
   }
 }
 

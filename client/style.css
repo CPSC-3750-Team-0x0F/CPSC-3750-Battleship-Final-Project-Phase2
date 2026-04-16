@@ -12,7 +12,7 @@ body {
 }
 
 .hidden {
-  display: none;
+  display: none !important;
 }
 
 h1 {
@@ -25,6 +25,11 @@ h1 {
   color: #9fb3c8;
   margin-bottom: 30px;
   text-align: center;
+}
+
+.left-align {
+  text-align: left;
+  margin-bottom: 0;
 }
 
 .card {
@@ -43,6 +48,7 @@ input {
   border-radius: 8px;
   border: none;
   outline: none;
+  box-sizing: border-box;
 }
 
 .buttons {
@@ -65,7 +71,15 @@ button:hover {
   background: #1f7dd8;
 }
 
-#status {
+.secondary-btn {
+  background: #29476a;
+}
+
+.secondary-btn:hover {
+  background: #355a84;
+}
+
+.status-text {
   margin-top: 20px;
   color: #9fb3c8;
   text-align: center;
@@ -76,6 +90,7 @@ button:hover {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 25px;
+  gap: 20px;
 }
 
 .game-title {
@@ -89,26 +104,31 @@ button:hover {
   padding: 10px 18px;
 }
 
-.info-panel {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 15px;
-  margin-bottom: 25px;
-}
-
-.info-box {
-  background: #14263c;
-  border-radius: 10px;
-  padding: 15px;
+.turn-strip {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
-  text-align: center;
+  justify-content: center;
+  gap: 16px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
 }
 
-.label {
+.turn-badge {
+  padding: 12px 20px;
+  border-radius: 999px;
+  background: #14263c;
   color: #9fb3c8;
-  font-size: 0.9rem;
+  border: 1px solid #29476a;
+  font-weight: bold;
+  min-width: 130px;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.turn-badge.active {
+  background: #ffd166;
+  color: #17212f;
+  border-color: #ffd166;
+  box-shadow: 0 0 18px rgba(255, 209, 102, 0.45);
 }
 
 .boards {
@@ -164,6 +184,10 @@ button:hover {
 .game-actions {
   margin-top: 25px;
   text-align: center;
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 @media (max-width: 900px) {
@@ -171,12 +195,13 @@ button:hover {
     grid-template-columns: 1fr;
   }
 
-  .info-panel {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
   .topbar {
     flex-direction: column;
-    gap: 15px;
+    align-items: stretch;
+  }
+
+  .game-title,
+  .left-align {
+    text-align: center;
   }
 }
