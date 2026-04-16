@@ -201,15 +201,12 @@ function renderGameInfo(game) {
   document.getElementById("playerIdText").textContent = currentPlayerId || "-";
   document.getElementById("gameIdText").textContent = currentGameId || "-";
 
-  const currentTurn =
-    game.current_turn_player_id ||
-    game.current_player_id ||
-    game.current_turn_index ||
-    "-";
+  const status = game.status || "unknown";
+  const turnIndex = game.current_turn_index ?? "-";
 
-  document.getElementById("turnText").textContent = currentTurn;
+  document.getElementById("turnText").textContent = `Turn Order ${turnIndex}`;
   document.getElementById("gameStatusText").textContent =
-    `Status: ${game.status || "unknown"}`;
+    `Status: ${status} | Players: ${game.active_players}/${game.max_players}`;
 }
 
 function buildBoardsFromState(game) {
@@ -262,6 +259,9 @@ async function fireShot(row, col) {
     if (!response.ok) {
       throw new Error(data.message || data.error || "Shot failed");
     }
+
+    document.getElementById("gameStatusText").textContent =
+      `Shot result: ${data.result} | Game: ${data.game_status}`;
 
     await refreshGameState();
   } catch (err) {
