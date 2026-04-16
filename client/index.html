@@ -3,122 +3,214 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Battleship Client</title>
+  <title>Battleship Online</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div class="container">
-    <h1>Battleship Client</h1>
-    <p class="subtitle">Frontend for your final Battleship project</p>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <h1>Battleship Online</h1>
+        <p>Multiplayer browser client for your Battleship API</p>
+      </div>
 
-    <section class="card">
-      <h2>API Settings</h2>
-      <label for="apiBase">API Base URL</label>
-      <input
-        type="text"
-        id="apiBase"
-        value="http://localhost:3000/api"
-        placeholder="http://localhost:3000/api"
-      />
-      <small>
-        Change this to your Render URL later, like:
-        https://your-app.onrender.com/api
-      </small>
+      <div class="server-box">
+        <label for="serverUrl">Server URL</label>
+        <div class="server-row">
+          <input
+            id="serverUrl"
+            type="text"
+            placeholder="https://your-server.onrender.com/api"
+          />
+          <button type="button" class="secondary" onclick="saveServerUrl()">
+            Save
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- LANDING PAGE -->
+    <section id="landingView">
+      <div class="grid">
+        <div class="landing-main">
+          <div class="hero">
+            <h2>Create a game or join one</h2>
+            <p>
+              Choose a server, create your player, then create a new game or
+              join an existing one. Progress is saved in your browser so refresh
+              does not kill your session.
+            </p>
+          </div>
+
+          <div class="two-col">
+            <div class="card">
+              <h3>Create Player</h3>
+
+              <div class="field">
+                <label for="username">Username</label>
+                <input id="username" type="text" placeholder="Enter username" />
+              </div>
+
+              <div class="actions">
+                <button type="button" onclick="createPlayer()">Create Player</button>
+                <button type="button" class="secondary" onclick="loadSavedIdentity()">
+                  Load Saved Player
+                </button>
+              </div>
+            </div>
+
+            <div class="card">
+              <h3>Create Game</h3>
+
+              <div class="field">
+                <label for="createGridSize">Grid Size</label>
+                <select id="createGridSize">
+                  <option value="5">5 x 5</option>
+                  <option value="8">8 x 8</option>
+                  <option value="10" selected>10 x 10</option>
+                  <option value="12">12 x 12</option>
+                  <option value="15">15 x 15</option>
+                </select>
+              </div>
+
+              <div class="actions">
+                <button type="button" onclick="createGame()">Create Game</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="landing-side">
+          <div class="card">
+            <h3>Join Existing Game</h3>
+
+            <div class="field">
+              <label for="joinGameId">Game ID</label>
+              <input id="joinGameId" type="number" placeholder="Enter game ID" />
+            </div>
+
+            <div class="actions">
+              <button type="button" onclick="joinGameById()">Join by ID</button>
+              <button type="button" class="secondary" onclick="resumeSavedGame()">
+                Resume Saved Game
+              </button>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>Open Lobbies</h3>
+            <p class="hint">
+              If the backend supports listing games, they will show here.
+            </p>
+
+            <div class="actions">
+              <button type="button" class="secondary" onclick="loadLobbyList()">
+                Refresh Lobbies
+              </button>
+            </div>
+
+            <div id="lobbyList" class="list"></div>
+          </div>
+
+          <div class="card">
+            <h3>Saved Session</h3>
+            <div id="savedSessionText" class="hint">No saved session yet.</div>
+          </div>
+        </div>
+      </div>
     </section>
 
-    <section class="card">
-      <h2>Create Player</h2>
-      <label for="username">Username</label>
-      <input type="text" id="username" placeholder="Enter username" />
-      <button onclick="createPlayer()">Create Player</button>
-    </section>
+    <!-- GAME PAGE -->
+    <section id="gameView" class="hidden">
+      <div class="game-layout">
+        <div class="stack">
+          <div class="card">
+            <h3>Session</h3>
+            <div class="players">
+              <div class="player-chip"><span>Server</span><strong id="sessionServer">-</strong></div>
+              <div class="player-chip"><span>Username</span><strong id="sessionUsername">-</strong></div>
+              <div class="player-chip"><span>Player ID</span><strong id="sessionPlayerId">-</strong></div>
+              <div class="player-chip"><span>Game ID</span><strong id="sessionGameId">-</strong></div>
+            </div>
 
-    <section class="card">
-      <h2>Get Player Stats</h2>
-      <label for="statsPlayerId">Player ID</label>
-      <input type="number" id="statsPlayerId" placeholder="Player ID" />
-      <button onclick="getPlayerStats()">Get Stats</button>
-    </section>
+            <div class="actions">
+              <button type="button" class="secondary" onclick="leaveToLanding()">Back Home</button>
+              <button type="button" class="secondary" onclick="refreshGame()">Refresh</button>
+            </div>
+          </div>
 
-    <section class="card">
-      <h2>Create Game</h2>
-      <label for="creatorId">Creator Player ID</label>
-      <input type="number" id="creatorId" placeholder="Player ID" />
+          <div class="card">
+            <h3>Status</h3>
+            <div class="status-wrap">
+              <div id="turnIndicator" class="pill">Waiting for game state...</div>
+              <div id="gameStatusPill" class="pill">Status: -</div>
+            </div>
+            <p id="placementHint" class="hint">
+              Place ships while the game is waiting.
+            </p>
+          </div>
 
-      <label for="gridSize">Grid Size</label>
-      <input type="number" id="gridSize" placeholder="Grid Size" value="10" />
+          <div class="card">
+            <h3>Stats</h3>
+            <div class="stats-grid">
+              <div class="stat"><small>Games Played</small><strong id="statGames">0</strong></div>
+              <div class="stat"><small>Wins</small><strong id="statWins">0</strong></div>
+              <div class="stat"><small>Losses</small><strong id="statLosses">0</strong></div>
+              <div class="stat"><small>Accuracy</small><strong id="statAccuracy">0%</strong></div>
+            </div>
+          </div>
 
-      <button onclick="createGame()">Create Game</button>
-    </section>
+          <div class="card">
+            <h3>Players</h3>
+            <div id="playersPanel" class="players"></div>
+          </div>
 
-    <section class="card">
-      <h2>Join Game</h2>
-      <label for="joinGameId">Game ID</label>
-      <input type="number" id="joinGameId" placeholder="Game ID" />
+          <div class="card">
+            <h3>Move Log</h3>
+            <div id="log" class="log">No events yet.</div>
+          </div>
+        </div>
 
-      <label for="joinPlayerId">Player ID</label>
-      <input type="number" id="joinPlayerId" placeholder="Player ID" />
+        <div class="stack">
+          <div class="card">
+            <h3>Ship Placement</h3>
+            <p class="hint">
+              Click 3 cells on your board, then submit placement.
+            </p>
 
-      <button onclick="joinGame()">Join Game</button>
-    </section>
+            <div class="actions">
+              <button type="button" onclick="submitPlacement()">Submit Placement</button>
+              <button type="button" class="secondary" onclick="clearPlacementSelection()">
+                Clear Selection
+              </button>
+            </div>
+          </div>
 
-    <section class="card">
-      <h2>Get Game Info</h2>
-      <label for="gameInfoId">Game ID</label>
-      <input type="number" id="gameInfoId" placeholder="Game ID" />
-      <button onclick="getGameInfo()">Get Game Info</button>
-    </section>
+          <div class="board-section">
+            <div class="board-wrap">
+              <div class="board-header">
+                <div>
+                  <h3>Your Board</h3>
+                  <div class="meta">Your ships and known hits/misses</div>
+                </div>
+              </div>
+              <div id="ownBoard" class="board"></div>
+            </div>
 
-    <section class="card">
-      <h2>Place Ships</h2>
-      <label for="placeGameId">Game ID</label>
-      <input type="number" id="placeGameId" placeholder="Game ID" />
+            <div class="board-wrap">
+              <div class="board-header">
+                <div>
+                  <h3>Target Board</h3>
+                  <div class="meta">Choose an opponent and fire when it is your turn</div>
+                </div>
 
-      <label for="placePlayerId">Player ID</label>
-      <input type="number" id="placePlayerId" placeholder="Player ID" />
-
-      <label for="shipsJson">Ships JSON</label>
-      <textarea id="shipsJson" rows="8" placeholder='[{"row":0,"col":0},{"row":1,"col":1},{"row":2,"col":2}]'></textarea>
-
-      <button onclick="placeShips()">Place Ships</button>
-    </section>
-
-    <section class="card">
-      <h2>Fire Shot</h2>
-      <label for="fireGameId">Game ID</label>
-      <input type="number" id="fireGameId" placeholder="Game ID" />
-
-      <label for="firePlayerId">Player ID</label>
-      <input type="number" id="firePlayerId" placeholder="Player ID" />
-
-      <label for="fireRow">Row</label>
-      <input type="number" id="fireRow" placeholder="Row" />
-
-      <label for="fireCol">Col</label>
-      <input type="number" id="fireCol" placeholder="Col" />
-
-      <button onclick="fireShot()">Fire Shot</button>
-    </section>
-
-    <section class="card">
-      <h2>Get Board (Test Mode)</h2>
-      <label for="boardGameId">Game ID</label>
-      <input type="number" id="boardGameId" placeholder="Game ID" />
-
-      <label for="boardPlayerId">Player ID</label>
-      <input type="number" id="boardPlayerId" placeholder="Player ID" />
-
-      <button onclick="getBoard()">Get Board</button>
-    </section>
-
-    <section class="card">
-      <h2>Reset Database</h2>
-      <button class="danger" onclick="resetDatabase()">POST /api/reset</button>
-    </section>
-
-    <section class="card">
-      <h2>Response Output</h2>
-      <pre id="output">Responses will show here...</pre>
+                <select id="targetPlayerSelect" onchange="saveTargetSelection()"></select>
+              </div>
+              <div id="targetBoard" class="board"></div>
+            </div>
+          </div>
+        </div>
+      </div>
     </section>
   </div>
 
