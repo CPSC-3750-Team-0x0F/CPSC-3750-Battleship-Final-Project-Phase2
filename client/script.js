@@ -1,6 +1,5 @@
-function getApiBase() {
-  return document.getElementById("apiBase").value.trim();
-}
+// ALWAYS use same backend (works locally + on Render)
+const API_BASE = "/api";
 
 function showOutput(data) {
   document.getElementById("output").textContent = JSON.stringify(data, null, 2);
@@ -30,8 +29,9 @@ async function handleResponse(response) {
   return data;
 }
 
+// ---------------- PLAYERS ----------------
+
 async function createPlayer() {
-  const api = getApiBase();
   const username = document.getElementById("username").value.trim();
 
   if (!username) {
@@ -40,51 +40,47 @@ async function createPlayer() {
   }
 
   try {
-    const response = await fetch(`${api}/players`, {
+    const res = await fetch(`${API_BASE}/players`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username })
     });
 
-    const data = await handleResponse(response);
-    showOutput(data);
-  } catch (error) {
-    showError(error);
+    showOutput(await handleResponse(res));
+  } catch (err) {
+    showError(err);
   }
 }
 
 async function getPlayerStats() {
-  const api = getApiBase();
   const playerId = document.getElementById("statsPlayerId").value;
 
   if (!playerId) {
-    showError("Player ID is required.");
+    showError("Player ID required");
     return;
   }
 
   try {
-    const response = await fetch(`${api}/players/${playerId}/stats`);
-    const data = await handleResponse(response);
-    showOutput(data);
-  } catch (error) {
-    showError(error);
+    const res = await fetch(`${API_BASE}/players/${playerId}/stats`);
+    showOutput(await handleResponse(res));
+  } catch (err) {
+    showError(err);
   }
 }
 
+// ---------------- GAMES ----------------
+
 async function createGame() {
-  const api = getApiBase();
   const player_id = Number(document.getElementById("creatorId").value);
   const grid_size = Number(document.getElementById("gridSize").value);
 
   if (!player_id || !grid_size) {
-    showError("Creator Player ID and Grid Size are required.");
+    showError("Missing inputs");
     return;
   }
 
   try {
-    const response = await fetch(`${api}/games`, {
+    const res = await fetch(`${API_BASE}/games`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -92,25 +88,23 @@ async function createGame() {
       body: JSON.stringify({ player_id, grid_size })
     });
 
-    const data = await handleResponse(response);
-    showOutput(data);
-  } catch (error) {
-    showError(error);
+    showOutput(await handleResponse(res));
+  } catch (err) {
+    showError(err);
   }
 }
 
 async function joinGame() {
-  const api = getApiBase();
   const gameId = document.getElementById("joinGameId").value;
   const player_id = Number(document.getElementById("joinPlayerId").value);
 
   if (!gameId || !player_id) {
-    showError("Game ID and Player ID are required.");
+    showError("Missing inputs");
     return;
   }
 
   try {
-    const response = await fetch(`${api}/games/${gameId}/join`, {
+    const res = await fetch(`${API_BASE}/games/${gameId}/join`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -118,39 +112,37 @@ async function joinGame() {
       body: JSON.stringify({ player_id })
     });
 
-    const data = await handleResponse(response);
-    showOutput(data);
-  } catch (error) {
-    showError(error);
+    showOutput(await handleResponse(res));
+  } catch (err) {
+    showError(err);
   }
 }
 
 async function getGameInfo() {
-  const api = getApiBase();
   const gameId = document.getElementById("gameInfoId").value;
 
   if (!gameId) {
-    showError("Game ID is required.");
+    showError("Game ID required");
     return;
   }
 
   try {
-    const response = await fetch(`${api}/games/${gameId}`);
-    const data = await handleResponse(response);
-    showOutput(data);
-  } catch (error) {
-    showError(error);
+    const res = await fetch(`${API_BASE}/games/${gameId}`);
+    showOutput(await handleResponse(res));
+  } catch (err) {
+    showError(err);
   }
 }
 
+// ---------------- SHIPS ----------------
+
 async function placeShips() {
-  const api = getApiBase();
   const gameId = document.getElementById("placeGameId").value;
   const player_id = Number(document.getElementById("placePlayerId").value);
   const shipsText = document.getElementById("shipsJson").value.trim();
 
   if (!gameId || !player_id || !shipsText) {
-    showError("Game ID, Player ID, and Ships JSON are required.");
+    showError("Missing inputs");
     return;
   }
 
@@ -158,12 +150,12 @@ async function placeShips() {
   try {
     ships = JSON.parse(shipsText);
   } catch {
-    showError("Ships JSON is invalid.");
+    showError("Invalid JSON");
     return;
   }
 
   try {
-    const response = await fetch(`${api}/games/${gameId}/place`, {
+    const res = await fetch(`${API_BASE}/games/${gameId}/place`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -171,27 +163,27 @@ async function placeShips() {
       body: JSON.stringify({ player_id, ships })
     });
 
-    const data = await handleResponse(response);
-    showOutput(data);
-  } catch (error) {
-    showError(error);
+    showOutput(await handleResponse(res));
+  } catch (err) {
+    showError(err);
   }
 }
 
+// ---------------- FIRE ----------------
+
 async function fireShot() {
-  const api = getApiBase();
   const gameId = document.getElementById("fireGameId").value;
   const player_id = Number(document.getElementById("firePlayerId").value);
   const row = Number(document.getElementById("fireRow").value);
   const col = Number(document.getElementById("fireCol").value);
 
-  if (!gameId || !player_id || Number.isNaN(row) || Number.isNaN(col)) {
-    showError("Game ID, Player ID, row, and col are required.");
+  if (!gameId || !player_id || isNaN(row) || isNaN(col)) {
+    showError("Missing inputs");
     return;
   }
 
   try {
-    const response = await fetch(`${api}/games/${gameId}/fire`, {
+    const res = await fetch(`${API_BASE}/games/${gameId}/fire`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -199,43 +191,41 @@ async function fireShot() {
       body: JSON.stringify({ player_id, row, col })
     });
 
-    const data = await handleResponse(response);
-    showOutput(data);
-  } catch (error) {
-    showError(error);
+    showOutput(await handleResponse(res));
+  } catch (err) {
+    showError(err);
   }
 }
 
+// ---------------- TEST ----------------
+
 async function getBoard() {
-  const api = getApiBase();
   const gameId = document.getElementById("boardGameId").value;
   const playerId = document.getElementById("boardPlayerId").value;
 
   if (!gameId || !playerId) {
-    showError("Game ID and Player ID are required.");
+    showError("Missing inputs");
     return;
   }
 
   try {
-    const response = await fetch(`${api}/test/games/${gameId}/board/${playerId}`);
-    const data = await handleResponse(response);
-    showOutput(data);
-  } catch (error) {
-    showError(error);
+    const res = await fetch(`${API_BASE}/test/games/${gameId}/board/${playerId}`);
+    showOutput(await handleResponse(res));
+  } catch (err) {
+    showError(err);
   }
 }
 
-async function resetDatabase() {
-  const api = getApiBase();
+// ---------------- RESET ----------------
 
+async function resetDatabase() {
   try {
-    const response = await fetch(`${api}/reset`, {
+    const res = await fetch(`${API_BASE}/reset`, {
       method: "POST"
     });
 
-    const data = await handleResponse(response);
-    showOutput(data);
-  } catch (error) {
-    showError(error);
+    showOutput(await handleResponse(res));
+  } catch (err) {
+    showError(err);
   }
 }

@@ -12,7 +12,7 @@ const app = express();
 app.use(bodyParser.json());
 
 /* ---------------- STATIC FRONTEND ---------------- */
-app.use(express.static(path.join(__dirname, "client")));
+app.use(express.static(path.join(__dirname, "..", "client")));
 
 /* ---------------- API ROUTES ---------------- */
 app.use("/api/players", playerRoutes);
@@ -50,7 +50,9 @@ app.get("/api/health", (req, res) => {
 /* ---------------- SYSTEM RESET ---------------- */
 app.post("/api/reset", async (req, res) => {
   try {
-    await db.query("TRUNCATE players, games, game_players, ships, moves RESTART IDENTITY CASCADE");
+    await db.query(
+      "TRUNCATE players, games, game_players, ships, moves RESTART IDENTITY CASCADE"
+    );
 
     res.status(200).json({ status: "reset" });
   } catch (err) {
@@ -64,7 +66,7 @@ app.post("/api/reset", async (req, res) => {
 
 /* ---------------- FRONTEND ROOT ---------------- */
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "client", "index.html"));
+  res.sendFile(path.join(__dirname, "..", "client", "index.html"));
 });
 
 const PORT = process.env.PORT || 3000;
