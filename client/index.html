@@ -8,7 +8,6 @@
 </head>
 <body>
   <div class="container">
-    <!-- LANDING VIEW -->
     <section id="landingView">
       <h1>Battleship Online</h1>
       <p class="subtitle">Create or join a game</p>
@@ -18,7 +17,7 @@
         <input id="gameId" type="number" placeholder="Enter Game ID (for join)" />
 
         <div class="buttons">
-          <button onclick="createGame()">Create Game</button>
+          <button onclick="openCreateGameModal()">Create Game</button>
           <button onclick="joinGame()">Join Game</button>
           <button onclick="playBot()">Play Bot</button>
         </div>
@@ -27,14 +26,13 @@
       <div id="status" class="status-text"></div>
     </section>
 
-    <!-- GAME VIEW -->
     <section id="gameView" class="hidden">
       <div class="topbar">
         <div>
           <h1 class="game-title">Battleship Match</h1>
           <p id="gameStatusOnly" class="subtitle left-align">Waiting for game data...</p>
         </div>
-        <button class="back-btn secondary-btn" onclick="goHome()">Back</button>
+        <button class="secondary-btn back-btn" onclick="goHome()">Back</button>
       </div>
 
       <div class="turn-strip">
@@ -45,20 +43,64 @@
       <div class="boards">
         <div class="board-panel">
           <h2 id="yourBoardLabel">Your Board</h2>
+          <p id="placementHelp" class="board-help hidden">Click 3 cells to place your ships.</p>
           <div id="playerBoard" class="board"></div>
         </div>
 
         <div class="board-panel">
           <h2 id="enemyBoardLabel">Opponent Board</h2>
+          <p class="board-help">Green = hit, Red = miss</p>
           <div id="enemyBoard" class="board"></div>
         </div>
       </div>
 
       <div class="game-actions">
-        <button id="placeShipsBtn" class="hidden" onclick="submitDefaultShips()">Place Ships</button>
+        <button id="startPlacementBtn" class="hidden" onclick="enablePlacementMode()">
+          Start Ship Placement
+        </button>
+        <button id="submitPlacementBtn" class="hidden" onclick="submitPlacedShips()">
+          Confirm Placement
+        </button>
+        <button id="clearPlacementBtn" class="hidden secondary-btn" onclick="clearPlacementSelection()">
+          Clear Selection
+        </button>
         <button class="secondary-btn" onclick="refreshGameState()">Refresh Game</button>
       </div>
     </section>
+  </div>
+
+  <div id="createGameModal" class="modal hidden">
+    <div class="modal-card">
+      <h2>Create Game</h2>
+
+      <label for="gridSizeSelect">Board Size</label>
+      <select id="gridSizeSelect">
+        <option value="5">5 x 5</option>
+        <option value="6">6 x 6</option>
+        <option value="7">7 x 7</option>
+        <option value="8">8 x 8</option>
+        <option value="9">9 x 9</option>
+        <option value="10" selected>10 x 10</option>
+        <option value="11">11 x 11</option>
+        <option value="12">12 x 12</option>
+        <option value="13">13 x 13</option>
+        <option value="14">14 x 14</option>
+        <option value="15">15 x 15</option>
+      </select>
+
+      <label for="maxPlayersSelect">Max Players</label>
+      <select id="maxPlayersSelect">
+        <option value="2" selected>2 Players</option>
+      </select>
+
+      <label for="shipCountDisplay">Ships</label>
+      <input id="shipCountDisplay" type="text" value="3 ships (backend rule)" disabled />
+
+      <div class="modal-actions">
+        <button onclick="createGameFromModal()">Create</button>
+        <button class="secondary-btn" onclick="closeCreateGameModal()">Cancel</button>
+      </div>
+    </div>
   </div>
 
   <script src="script.js"></script>

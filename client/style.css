@@ -41,7 +41,8 @@ h1 {
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
 }
 
-input {
+input,
+select {
   width: 100%;
   padding: 12px;
   margin-bottom: 15px;
@@ -146,12 +147,18 @@ button:hover {
 .board-panel h2 {
   text-align: center;
   margin-top: 0;
-  margin-bottom: 15px;
+  margin-bottom: 10px;
+}
+
+.board-help {
+  text-align: center;
+  color: #9fb3c8;
+  margin-bottom: 14px;
+  font-size: 0.95rem;
 }
 
 .board {
   display: grid;
-  grid-template-columns: repeat(10, 36px);
   gap: 4px;
   justify-content: center;
 }
@@ -162,23 +169,34 @@ button:hover {
   border-radius: 6px;
   background: #1d3552;
   border: 1px solid #29476a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cell.placeable:hover,
+.cell.targetable:hover {
+  outline: 2px solid #3aa0ff;
+  cursor: pointer;
 }
 
 .cell.ship {
   background: #6c7a89;
 }
 
+.cell.pending-ship {
+  background: #9aa7b4;
+  outline: 2px solid #ffd166;
+}
+
 .cell.hit {
-  background: #e74c3c;
+  background: #2ecc71;
+  border-color: #2ecc71;
 }
 
 .cell.miss {
-  background: #95a5a6;
-}
-
-.cell.targetable:hover {
-  outline: 2px solid #3aa0ff;
-  cursor: pointer;
+  background: #e74c3c;
+  border-color: #e74c3c;
 }
 
 .game-actions {
@@ -188,6 +206,43 @@ button:hover {
   justify-content: center;
   gap: 12px;
   flex-wrap: wrap;
+}
+
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+
+.modal-card {
+  width: 360px;
+  max-width: calc(100vw - 40px);
+  background: #14263c;
+  border-radius: 14px;
+  padding: 24px;
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.55);
+}
+
+.modal-card h2 {
+  margin-top: 0;
+  margin-bottom: 18px;
+  text-align: center;
+}
+
+.modal-card label {
+  display: block;
+  margin-bottom: 8px;
+  color: #9fb3c8;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
 }
 
 @media (max-width: 900px) {
