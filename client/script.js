@@ -1,4 +1,4 @@
-const API_BASE = "/api";
+let SERVER_BASE = localStorage.getItem("battleship_server_url") || "";
 
 let currentPlayerId = null;
 let currentGameId = null;
@@ -20,8 +20,103 @@ const STORAGE_KEYS = {
   placedShipsPrefix: "battleship_placed_ships_"
 };
 
+function getApiBase() {
+  return `${SERVER_BASE}/api`;
+}
+
 function setStatus(msg) {
   document.getElementById("status").textContent = msg;
+}
+
+function setServerStatus(message, type = "") {
+  const el = document.getElementById("serverConnectionStatus");
+  el.textContent = message;
+  el.className = "server-status";
+  if (type) {
+    el.classList.add(type);
+  }
+}
+
+function updateServerDisplay() {
+  document.getElementById("currentServerDisplay").textContent =
+    SERVER_BASE ? `Server: ${SERVER_BASE}` : "Server: None";
+}
+
+async function connectToServer() {
+  const input = document.getElementById("serverUrl").value.trim();
+
+  if (!input) {
+    setServerStatus("Please enter a server URL.", "error");
+    setStatus("Enter a server URL first.");
+    return;
+  }
+
+  const cleaned = input.replace(/\/+$/, "");
+
+  try {
+    const response = await fetch(`${cleaned}/api`);
+    if (!response.ok) {
+      throw new Error("Could not connect");
+    }
+
+    SERVER_BASE = cleaned;
+    localStorage.setItem("battleship_server_url", SERVER_BASE);
+    updateServerDisplay();
+    setServerStatus("Connection successful.", "success");
+    setStatus("Connected to server successfully.");
+  } catch (err) {
+    setServerStatus("Connection failed.", "error");
+    setStatus("Could not connect to that server.");
+  }
+}
+
+function clearGameSessionStorage() {
+  localStorage.removeItem(STORAGE_KEYS.username);
+  localStorage.removeItem(STORAGE_KEYS.playerId);
+  localStorage.removeItem(STORAGE_KEYS.gameId);
+  localStorage.removeItem(STORAGE_KEYS.turnOrder);
+  localStorage.removeItem(STORAGE_KEYS.gridSize);
+
+  if (currentGameId && currentPlayerId) {
+    localStorage.removeItem(placedShipsKey());
+  }
+}
+
+function resetClientServer() {
+  stopPolling();
+  closeLobbyModal();
+
+  currentPlayerId = null;
+  currentGameId = null;
+  currentUsername = "";
+  currentGameData = null;
+  currentTurnOrder = null;
+  currentGridSize = 10;
+  placementMode = false;
+  pendingShips = [];
+
+  clearGameSessionStorage();
+
+  SERVER_BASE = "";
+  localStorage.removeItem("battleship_server_url");
+
+  document.getElementById("serverUrl").value = "";
+  document.getElementById("username").value = "";
+  document.getElementById("gameId").value = "";
+
+  updateServerDisplay();
+  setServerStatus("Not connected");
+  setStatus("Choose a server to connect.");
+  showLanding();
+}
+
+function requireServer() {
+  if (!SERVER_BASE) {
+    setServerStatus("Not connected to a server.", "error");
+    setStatus("Please connect to a server first.");
+    return false;
+  }
+  return true;
 }
 
 function showLanding() {
@@ -42,6 +137,7 @@ function goHome() {
 }
 
 function openCreateGameModal() {
+  if (!requireServer()) return;
   document.getElementById("createGameModal").classList.remove("hidden");
 }
 
@@ -66,7 +162,7 @@ function enterGameFromLobby() {
 function startPolling() {
   stopPolling();
   pollInterval = setInterval(() => {
-    if (currentGameId) {
+    if (currentGameId && SERVER_BASE) {
       refreshGameState(true);
     }
   }, 2000);
@@ -137,7 +233,7 @@ function loadPlacedShips() {
 }
 
 async function createPlayer(username) {
-  const response = await fetch(`${API_BASE}/players`, {
+  const response = await fetch(`${getApiBase()}/players`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ username })
@@ -153,6 +249,8 @@ async function createPlayer(username) {
 }
 
 async function createGameFromModal() {
+  if (!requireServer()) return;
+
   const username = document.getElementById("username").value.trim();
   const gridSize = Number(document.getElementById("gridSizeSelect").value);
   const maxPlayers = Number(document.getElementById("maxPlayersSelect").value);
@@ -168,7 +266,7 @@ async function createGameFromModal() {
     currentTurnOrder = 0;
     currentGridSize = gridSize;
 
-    const gameRes = await fetch(`${API_BASE}/games`, {
+    const gameRes = await fetch(`${getApiBase()}/games`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -198,6 +296,8 @@ async function createGameFromModal() {
 }
 
 async function joinGame() {
+  if (!requireServer()) return;
+
   const username = document.getElementById("username").value.trim();
   const gameId = document.getElementById("gameId").value.trim();
 
@@ -210,7 +310,7 @@ async function joinGame() {
     currentUsername = username;
     currentPlayerId = await createPlayer(username);
 
-    const joinRes = await fetch(`${API_BASE}/games/${gameId}/join`, {
+    const joinRes = await fetch(`${getApiBase()}/games/${gameId}/join`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -306,12 +406,12 @@ function updateLobbyDisplay(game) {
 }
 
 async function refreshGameState(silent = false) {
-  if (!currentGameId) return;
+  if (!currentGameId || !SERVER_BASE) return;
 
   try {
     const [gameRes, movesRes] = await Promise.all([
-      fetch(`${API_BASE}/games/${currentGameId}`),
-      fetch(`${API_BASE}/games/${currentGameId}/moves`)
+      fetch(`${getApiBase()}/games/${currentGameId}`),
+      fetch(`${getApiBase()}/games/${currentGameId}/moves`)
     ]);
 
     const game = await gameRes.json();
@@ -428,7 +528,7 @@ function togglePendingShip(row, col) {
 }
 
 async function submitPlacedShips() {
-  if (!currentGameId || !currentPlayerId) return;
+  if (!currentGameId || !currentPlayerId || !SERVER_BASE) return;
 
   if (pendingShips.length !== 3) {
     document.getElementById("gameStatusOnly").textContent = "Select exactly 3 ship cells.";
@@ -436,7 +536,7 @@ async function submitPlacedShips() {
   }
 
   try {
-    const response = await fetch(`${API_BASE}/games/${currentGameId}/place`, {
+    const response = await fetch(`${getApiBase()}/games/${currentGameId}/place`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -463,11 +563,26 @@ async function submitPlacedShips() {
   }
 }
 
+function cellAlreadyTargetedByYou(row, col) {
+  const moves = currentGameData?.moves || [];
+  return moves.some(
+    (move) =>
+      Number(move.player_id) === Number(currentPlayerId) &&
+      Number(move.row) === Number(row) &&
+      Number(move.col) === Number(col)
+  );
+}
+
 async function fireShot(row, col) {
-  if (!currentGameId || !currentPlayerId) return;
+  if (!currentGameId || !currentPlayerId || !SERVER_BASE) return;
+
+  if (cellAlreadyTargetedByYou(row, col)) {
+    document.getElementById("gameStatusOnly").textContent = "You already fired at that cell.";
+    return;
+  }
 
   try {
-    const response = await fetch(`${API_BASE}/games/${currentGameId}/fire`, {
+    const response = await fetch(`${getApiBase()}/games/${currentGameId}/fire`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -519,6 +634,12 @@ function renderBoards() {
 
     if (Number(move.player_id) === Number(currentPlayerId)) {
       markCell("enemyBoard", row, col, resultClass);
+
+      const enemyCell = getCell("enemyBoard", row, col);
+      if (enemyCell) {
+        enemyCell.classList.remove("targetable");
+        enemyCell.classList.add("disabled-target");
+      }
     } else {
       markCell("playerBoard", row, col, resultClass);
     }
@@ -527,4 +648,13 @@ function renderBoards() {
 
 window.addEventListener("load", () => {
   loadSession();
+
+  if (SERVER_BASE) {
+    document.getElementById("serverUrl").value = SERVER_BASE;
+    updateServerDisplay();
+    setServerStatus("Previously connected server loaded.", "success");
+  } else {
+    updateServerDisplay();
+    setServerStatus("Not connected");
+  }
 });

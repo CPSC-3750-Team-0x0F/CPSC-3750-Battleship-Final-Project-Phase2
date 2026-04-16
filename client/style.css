@@ -180,6 +180,11 @@ button:hover {
   cursor: pointer;
 }
 
+.cell.disabled-target {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
 .cell.ship {
   background: #6c7a89;
 }
@@ -251,6 +256,49 @@ button:hover {
   text-align: center;
 }
 
+.server-panel {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  width: 320px;
+  background: #14263c;
+  border: 1px solid #29476a;
+  border-radius: 12px;
+  padding: 14px;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+  z-index: 1000;
+}
+
+.server-panel input {
+  margin-bottom: 10px;
+}
+
+.server-panel button {
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+.server-status {
+  margin-top: 6px;
+  font-size: 0.95rem;
+  color: #9fb3c8;
+}
+
+.server-status.success {
+  color: #2ecc71;
+}
+
+.server-status.error {
+  color: #e74c3c;
+}
+
+.server-current {
+  margin-top: 6px;
+  font-size: 0.9rem;
+  color: #d9e6f2;
+  word-break: break-word;
+}
+
 @media (max-width: 900px) {
   .boards {
     grid-template-columns: 1fr;
@@ -264,5 +312,11 @@ button:hover {
   .game-title,
   .left-align {
     text-align: center;
+  }
+
+  .server-panel {
+    position: static;
+    width: auto;
+    margin: 20px;
   }
 }

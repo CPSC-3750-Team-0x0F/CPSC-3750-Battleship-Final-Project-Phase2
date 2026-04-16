@@ -7,6 +7,14 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <div class="server-panel">
+    <input id="serverUrl" type="text" placeholder="Enter server URL" />
+    <button onclick="connectToServer()">Connect</button>
+    <button class="secondary-btn" onclick="resetClientServer()">Change</button>
+    <div id="serverConnectionStatus" class="server-status">Not connected</div>
+    <div id="currentServerDisplay" class="server-current">Server: None</div>
+  </div>
+
   <div class="container">
     <section id="landingView">
       <h1>Battleship Online</h1>
