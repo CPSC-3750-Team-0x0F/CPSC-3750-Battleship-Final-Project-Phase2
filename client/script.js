@@ -37,6 +37,7 @@ function showGame() {
 
 function goHome() {
   stopPolling();
+  closeLobbyModal();
   showLanding();
 }
 
@@ -46,6 +47,20 @@ function openCreateGameModal() {
 
 function closeCreateGameModal() {
   document.getElementById("createGameModal").classList.add("hidden");
+}
+
+function openLobbyModal() {
+  document.getElementById("lobbyModal").classList.remove("hidden");
+}
+
+function closeLobbyModal() {
+  document.getElementById("lobbyModal").classList.add("hidden");
+}
+
+function enterGameFromLobby() {
+  closeLobbyModal();
+  showGame();
+  refreshGameState();
 }
 
 function startPolling() {
@@ -66,8 +81,8 @@ function stopPolling() {
 
 function saveSession() {
   localStorage.setItem(STORAGE_KEYS.username, currentUsername);
-  localStorage.setItem(STORAGE_KEYS.playerId, currentPlayerId);
-  localStorage.setItem(STORAGE_KEYS.gameId, currentGameId);
+  localStorage.setItem(STORAGE_KEYS.playerId, currentPlayerId ?? "");
+  localStorage.setItem(STORAGE_KEYS.gameId, currentGameId ?? "");
   localStorage.setItem(STORAGE_KEYS.turnOrder, currentTurnOrder ?? "");
   localStorage.setItem(STORAGE_KEYS.gridSize, currentGridSize);
 }
@@ -111,6 +126,7 @@ function savePlacedShips(ships) {
 }
 
 function loadPlacedShips() {
+  if (!currentGameId || !currentPlayerId) return [];
   const raw = localStorage.getItem(placedShipsKey());
   if (!raw) return [];
   try {
@@ -173,7 +189,8 @@ async function createGameFromModal() {
     closeCreateGameModal();
     setStatus(`Game created! ID: ${currentGameId}`);
 
-    showGame();
+    openLobbyModal();
+    startPolling();
     await refreshGameState();
   } catch (err) {
     setStatus(err.message || "Error creating game");
@@ -208,11 +225,12 @@ async function joinGame() {
     }
 
     currentGameId = Number(gameId);
-    currentTurnOrder = Number(joinData.turn_order);
+    currentTurnOrder = Number(joinData.turn_order ?? 1);
     saveSession();
     setStatus(`Joined game ${gameId}`);
 
-    showGame();
+    openLobbyModal();
+    startPolling();
     await refreshGameState();
   } catch (err) {
     setStatus(err.message || "Error joining game");
@@ -259,6 +277,34 @@ function markCell(boardId, row, col, className) {
   }
 }
 
+function updateLobbyDisplay(game) {
+  const status = game.status || "unknown";
+  const activePlayers = Number(game.active_players || 0);
+  const maxPlayers = Number(game.max_players || 2);
+
+  document.getElementById("lobbyGameId").textContent = currentGameId ?? "-";
+  document.getElementById("lobbyPlayerCount").textContent = `${activePlayers} / ${maxPlayers}`;
+
+  let message = "Waiting for another player to join...";
+  let canEnter = false;
+
+  if ((status === "waiting_setup" || status === "waiting") && activePlayers < maxPlayers) {
+    message = "Waiting for another player to join...";
+  } else if ((status === "waiting_setup" || status === "waiting" || status === "active") && activePlayers === maxPlayers) {
+    message = "Both players are here. Ready to start ship placement.";
+    canEnter = true;
+  } else if (status === "playing") {
+    message = "Game has started.";
+    canEnter = true;
+  } else if (status === "finished") {
+    message = "Game finished.";
+    canEnter = true;
+  }
+
+  document.getElementById("lobbyStatusText").textContent = message;
+  document.getElementById("enterGameBtn").classList.toggle("hidden", !canEnter);
+}
+
 async function refreshGameState(silent = false) {
   if (!currentGameId) return;
 
@@ -287,11 +333,13 @@ async function refreshGameState(silent = false) {
     currentGridSize = Number(game.grid_size || currentGridSize || 10);
     saveSession();
 
+    updateLobbyDisplay(currentGameData);
     renderGameInfo(currentGameData);
     renderBoards();
   } catch (err) {
     if (!silent) {
       document.getElementById("gameStatusOnly").textContent = err.message;
+      setStatus(err.message);
     }
   }
 }
@@ -307,9 +355,9 @@ function renderGameInfo(game) {
 
   let message = `Game status: ${status} | Players: ${activePlayers}/${maxPlayers}`;
 
-  if (status === "waiting_setup" && activePlayers < maxPlayers) {
+  if ((status === "waiting_setup" || status === "waiting") && activePlayers < maxPlayers) {
     message = "Waiting for another player to join...";
-  } else if (status === "waiting_setup" && activePlayers === maxPlayers) {
+  } else if ((status === "waiting_setup" || status === "waiting" || status === "active") && activePlayers === maxPlayers) {
     const placed = loadPlacedShips();
     message = placed.length === 3
       ? "Ships placed. Waiting for the other player..."
@@ -322,7 +370,10 @@ function renderGameInfo(game) {
 
   document.getElementById("gameStatusOnly").textContent = message;
 
-  const canPlaceNow = status === "waiting_setup" && activePlayers === maxPlayers;
+  const canPlaceNow =
+    (status === "waiting_setup" || status === "waiting" || status === "active") &&
+    activePlayers === maxPlayers;
+
   const hasPlaced = loadPlacedShips().length === 3;
 
   document.getElementById("startPlacementBtn").classList.toggle(

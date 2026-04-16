@@ -103,6 +103,21 @@
     </div>
   </div>
 
+  <div id="lobbyModal" class="modal hidden">
+    <div class="modal-card">
+      <h2>Game Lobby</h2>
+
+      <p class="lobby-line"><strong>Game ID:</strong> <span id="lobbyGameId">-</span></p>
+      <p class="lobby-line"><strong>Status:</strong> <span id="lobbyStatusText">Waiting...</span></p>
+      <p class="lobby-line"><strong>Players:</strong> <span id="lobbyPlayerCount">0 / 2</span></p>
+
+      <div class="modal-actions">
+        <button id="enterGameBtn" class="hidden" onclick="enterGameFromLobby()">Enter Game</button>
+        <button class="secondary-btn" onclick="closeLobbyModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
   <script src="script.js"></script>
 </body>
 </html>
