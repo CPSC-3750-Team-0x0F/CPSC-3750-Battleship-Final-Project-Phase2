@@ -81,8 +81,9 @@ async function createGame() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        player_id: currentPlayerId,
-        grid_size: 10
+        creator_id: currentPlayerId,
+        grid_size: 10,
+        max_players: 2
       })
     });
 
