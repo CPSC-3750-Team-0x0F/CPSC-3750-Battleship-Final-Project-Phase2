@@ -1,40 +1,77 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Battleship Online</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css" />
 </head>
-
 <body>
   <div class="container">
 
-    <h1>Battleship Online</h1>
-    <p class="subtitle">Create or join a game</p>
+    <!-- LANDING VIEW -->
+    <section id="landingView">
+      <h1>Battleship Online</h1>
+      <p class="subtitle">Create or join a game</p>
 
-    <div class="card">
-      
-      <input 
-        id="username" 
-        type="text" 
-        placeholder="Enter Username"
-      />
+      <div class="card">
+        <input id="username" type="text" placeholder="Enter Username" />
+        <input id="gameId" type="number" placeholder="Enter Game ID (for join)" />
 
-      <input 
-        id="gameId" 
-        type="number" 
-        placeholder="Enter Game ID (for join)"
-      />
-
-      <div class="buttons">
-        <button onclick="createGame()">Create Game</button>
-        <button onclick="joinGame()">Join Game</button>
-        <button onclick="playBot()">Play Bot</button>
+        <div class="buttons">
+          <button onclick="createGame()">Create Game</button>
+          <button onclick="joinGame()">Join Game</button>
+          <button onclick="playBot()">Play Bot</button>
+        </div>
       </div>
 
-    </div>
+      <div id="status"></div>
+    </section>
 
-    <div id="status"></div>
+    <!-- GAME VIEW -->
+    <section id="gameView" class="hidden">
+      <div class="topbar">
+        <div>
+          <h1 class="game-title">Battleship Match</h1>
+          <p id="gameStatusText" class="subtitle">Waiting for game data...</p>
+        </div>
+        <button class="back-btn" onclick="goHome()">Back</button>
+      </div>
+
+      <div class="info-panel">
+        <div class="info-box">
+          <span class="label">Username</span>
+          <span id="playerName">-</span>
+        </div>
+        <div class="info-box">
+          <span class="label">Player ID</span>
+          <span id="playerIdText">-</span>
+        </div>
+        <div class="info-box">
+          <span class="label">Game ID</span>
+          <span id="gameIdText">-</span>
+        </div>
+        <div class="info-box">
+          <span class="label">Turn</span>
+          <span id="turnText">-</span>
+        </div>
+      </div>
+
+      <div class="boards">
+        <div class="board-panel">
+          <h2>Your Board</h2>
+          <div id="playerBoard" class="board"></div>
+        </div>
+
+        <div class="board-panel">
+          <h2>Enemy Board</h2>
+          <div id="enemyBoard" class="board"></div>
+        </div>
+      </div>
+
+      <div class="game-actions">
+        <button onclick="refreshGameState()">Refresh Game</button>
+      </div>
+    </section>
 
   </div>
 
