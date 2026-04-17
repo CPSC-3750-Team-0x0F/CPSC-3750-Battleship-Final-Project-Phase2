@@ -830,12 +830,26 @@ window.addEventListener("load", () => {
     updateServerDisplay();
     setServerStatus("Not connected");
   }
-});
 
-document.getElementById('exitGameBtn').addEventListener('click', () => {
-  stopPolling();
-  document.getElementById('gameResultOverlay').classList.add('hidden');
-  currentGameId = null;
-  currentGameData = null;
-  showLanding();
+  const exitBtn = document.getElementById("exitGameBtn");
+  if (exitBtn) {
+    exitBtn.addEventListener("click", () => {
+      stopPolling();
+
+      const overlay = document.getElementById("gameResultOverlay");
+      if (overlay) overlay.classList.add("hidden");
+
+      currentGameId = null;
+      currentGameData = null;
+      currentTurnOrder = null;
+      placementMode = false;
+      pendingShips = [];
+
+      localStorage.removeItem(STORAGE_KEYS.gameId);
+      localStorage.removeItem(STORAGE_KEYS.turnOrder);
+
+      showLanding();
+      loadAvailableGames();
+    });
+  }
 });

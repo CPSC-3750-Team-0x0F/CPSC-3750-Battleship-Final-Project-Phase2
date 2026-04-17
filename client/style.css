@@ -783,13 +783,13 @@ button:active {
 .result-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(5, 12, 22, 0.85); /* Deep navy tint */
-  backdrop-filter: blur(12px);
+  background: rgba(4, 10, 18, 0.78);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 2000;
-  transition: opacity 0.4s ease;
+  backdrop-filter: blur(6px);
+  padding: 20px;
 }
 
 .result-content {
@@ -879,31 +879,39 @@ button:active {
 }
 
 .result-content {
+  width: 500px;
+  max-width: calc(100vw - 32px);
   text-align: center;
-  padding: 40px;
-  border-radius: var(--radius-lg);
-  background: var(--panel-strong);
-  border: 2px solid var(--border);
-  box-shadow: var(--shadow-lg);
+  padding: 34px 34px 28px;
+  border-radius: 22px;
+  background: rgba(18, 38, 61, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.42);
 }
 
 .result-title {
-  font-size: 5rem;
+  font-size: clamp(3rem, 8vw, 4.5rem);
+  line-height: 0.95;
+  font-weight: 900;
   margin: 0;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
-.result-title.victory { color: var(--success); text-shadow: 0 0 20px rgba(46, 204, 113, 0.4); }
-.result-title.defeat { color: var(--danger); text-shadow: 0 0 20px rgba(231, 76, 60, 0.4); }
-
 .result-subtitle {
-  font-size: 1.2rem;
-  color: var(--text-soft);
-  margin-bottom: 30px;
+  margin: 14px 0 26px;
+  font-size: 1rem;
+  line-height: 1.35;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #a9bdd3;
 }
 
 .result-actions {
   display: flex;
-  gap: 15px;
   justify-content: center;
+}
+
+.result-actions button {
+  min-width: 220px;
 }
