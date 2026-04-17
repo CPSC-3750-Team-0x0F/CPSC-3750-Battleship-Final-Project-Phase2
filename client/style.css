@@ -605,4 +605,60 @@ button:active {
     width: 100%;
     min-width: 0;
   }
+
+  .available-games-card {
+  margin-top: 20px;
+  text-align: left;
+}
+
+.available-games-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.available-games-header h2 {
+  margin: 0;
+}
+
+.available-games-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.game-list-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 14px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.game-list-info p {
+  margin: 4px 0;
+}
+
+.empty-games {
+  margin: 0;
+  opacity: 0.8;
+}
+
+@media (max-width: 700px) {
+  .game-list-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .available-games-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
 }

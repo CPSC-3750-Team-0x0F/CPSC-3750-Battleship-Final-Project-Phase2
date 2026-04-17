@@ -42,6 +42,85 @@ function updateServerDisplay() {
     SERVER_BASE ? `Server: ${SERVER_BASE}` : "Server: None";
 }
 
+function renderAvailableGames(games) {
+  const container = document.getElementById("availableGamesList");
+  if (!container) return;
+
+  if (!Array.isArray(games) || games.length === 0) {
+    container.innerHTML = `<p class="empty-games">No open games available.</p>`;
+    return;
+  }
+
+  const openGames = games.filter((game) => {
+    const status = String(game.status || "").toLowerCase();
+    const activePlayers = Number(game.active_players || 0);
+    const maxPlayers = Number(game.max_players || 2);
+
+    return (
+      (status === "waiting" || status === "waiting_setup" || status === "active") &&
+      activePlayers < maxPlayers
+    );
+  });
+
+  if (openGames.length === 0) {
+    container.innerHTML = `<p class="empty-games">No joinable games right now.</p>`;
+    return;
+  }
+
+  container.innerHTML = openGames
+    .map((game) => {
+      const gameId = game.game_id ?? "Unknown";
+      const gridSize = game.grid_size ?? "?";
+      const activePlayers = Number(game.active_players || 0);
+      const maxPlayers = Number(game.max_players || 2);
+      const status = game.status || "unknown";
+
+      return `
+        <div class="game-list-item">
+          <div class="game-list-info">
+            <p><strong>Game ID:</strong> ${gameId}</p>
+            <p><strong>Status:</strong> ${status}</p>
+            <p><strong>Board:</strong> ${gridSize} x ${gridSize}</p>
+            <p><strong>Players:</strong> ${activePlayers} / ${maxPlayers}</p>
+          </div>
+          <button onclick="selectGameFromList(${gameId})">Join This Game</button>
+        </div>
+      `;
+    })
+    .join("");
+}
+
+function selectGameFromList(gameId) {
+  document.getElementById("gameId").value = gameId;
+  setStatus(`Selected game ${gameId}. Enter your username and click Join Game.`);
+}
+
+async function loadAvailableGames() {
+  if (!requireServer()) return;
+
+  const container = document.getElementById("availableGamesList");
+  if (container) {
+    container.innerHTML = `<p class="empty-games">Loading games...</p>`;
+  }
+
+  try {
+    const response = await fetch(`${getApiBase()}/games`);
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || data.error || "Failed to load games");
+    }
+
+    const games = Array.isArray(data) ? data : data.games || [];
+    renderAvailableGames(games);
+  } catch (err) {
+    if (container) {
+      container.innerHTML = `<p class="empty-games">Could not load games.</p>`;
+    }
+    setStatus(err.message || "Error loading available games");
+  }
+}
+
 async function connectToServer() {
   const input = document.getElementById("serverUrl").value.trim();
 
@@ -67,6 +146,7 @@ async function connectToServer() {
     updateServerDisplay();
     setServerStatus("Connection successful.", "success");
     setStatus("Connected to server successfully.");
+    loadAvailableGames();
   } catch (err) {
     setServerStatus("Connection failed.", "error");
     setStatus(err.message || "Could not connect to that server.");
@@ -110,6 +190,12 @@ function resetClientServer() {
   updateServerDisplay();
   setServerStatus("Not connected");
   setStatus("Choose a server to connect.");
+
+  const gamesList = document.getElementById("availableGamesList");
+  if (gamesList) {
+    gamesList.innerHTML = `<p class="empty-games">No games loaded yet.</p>`;
+  }
+
   showLanding();
 }
 
@@ -293,6 +379,7 @@ async function createGameFromModal() {
     openLobbyModal();
     startPolling();
     await refreshGameState();
+    loadAvailableGames();
   } catch (err) {
     setStatus(err.message || "Error creating game");
   }
@@ -335,6 +422,7 @@ async function joinGame() {
     openLobbyModal();
     startPolling();
     await refreshGameState();
+    loadAvailableGames();
   } catch (err) {
     setStatus(err.message || "Error joining game");
   }
@@ -656,6 +744,7 @@ window.addEventListener("load", () => {
     document.getElementById("serverUrl").value = SERVER_BASE;
     updateServerDisplay();
     setServerStatus("Previously connected server loaded.", "success");
+    loadAvailableGames();
   } else {
     updateServerDisplay();
     setServerStatus("Not connected");
