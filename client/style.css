@@ -90,17 +90,6 @@ body::after {
   }
 }
 
-@keyframes hitPop {
-  0% {
-    transform: scale(1);
-  }
-  40% {
-    transform: scale(1.22);
-  }
-  100% {
-    transform: scale(1);
-  }
-}
 
 .container,
 .server-panel,
@@ -408,8 +397,15 @@ button:active {
   cursor: pointer;
 }
 
-.cell.targetable {
+#enemyBoard .cell,
+#enemyBoard .cell:hover {
   cursor: crosshair;
+}
+
+#enemyBoard .cell.hit,
+#enemyBoard .cell.miss,
+#enemyBoard .cell.disabled-target {
+  cursor: not-allowed;
 }
 
 .cell.disabled-target {
@@ -431,13 +427,11 @@ button:active {
 .cell.hit {
   background: var(--success);
   border-color: rgba(46, 204, 113, 0.95);
-  animation: hitPop 0.25s ease;
 }
 
 .cell.miss {
   background: var(--danger);
   border-color: rgba(231, 76, 60, 0.95);
-  animation: hitPop 0.25s ease;
 }
 
 .game-actions {
