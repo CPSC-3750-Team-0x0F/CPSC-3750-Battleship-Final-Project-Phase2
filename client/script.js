@@ -755,22 +755,18 @@ async function fireShot(row, col) {
 }
 
 function showGameResult(winnerId) {
+  if (winnerId == null) return;
+
   stopPolling();
 
   const overlay = document.getElementById('gameResultOverlay');
   const victoryMsg = document.getElementById('victoryMessage');
   const defeatMsg = document.getElementById('defeatMessage');
 
-  // Debugging: Check what the server sent vs what you have
   console.log("Winner ID from server:", winnerId);
   console.log("Current Player ID:", currentPlayerId);
 
-  // Robust comparison: check both numeric and string equality
-  const isWinner = winnerId != null && (
-    Number(winnerId) === Number(currentPlayerId) || 
-    String(winnerId) === String(currentPlayerId) ||
-    String(winnerId) === String(currentUsername)
-  );
+  const isWinner = Number(winnerId) === Number(currentPlayerId);
 
   if (isWinner) {
     victoryMsg.classList.remove('hidden');
@@ -836,13 +832,10 @@ window.addEventListener("load", () => {
   }
 });
 
-// Add these to the bottom of script.js to make the overlay buttons work
-document.getElementById('playAgainBtn').addEventListener('click', () => {
-  document.getElementById('gameResultOverlay').classList.add('hidden');
-  // Return to lobby to start a new game
-  goHome(); 
-});
-
 document.getElementById('exitGameBtn').addEventListener('click', () => {
-  resetClientServer(); // Full reset
+  stopPolling();
+  document.getElementById('gameResultOverlay').classList.add('hidden');
+  currentGameId = null;
+  currentGameData = null;
+  showLanding();
 });

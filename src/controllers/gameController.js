@@ -216,7 +216,7 @@ exports.getGame = async (req, res) => {
     const gameId = Number(id);
 
     const result = await db.query(
-      `SELECT game_id, grid_size, status, current_turn_index, max_players
+      `SELECT game_id, grid_size, status, current_turn_index, max_players, winner_id
        FROM games
        WHERE game_id = $1`,
       [gameId]
@@ -271,6 +271,7 @@ exports.getGame = async (req, res) => {
       status: game.status,
       current_turn_index: Number(game.current_turn_index),
       max_players: Number(game.max_players),
+      winner_id: game.winner_id !== null ? Number(game.winner_id) : null,
       active_players: players.length,
       players,
       current_turn_player_id: current_turn_player_id ? Number(current_turn_player_id) : null,
