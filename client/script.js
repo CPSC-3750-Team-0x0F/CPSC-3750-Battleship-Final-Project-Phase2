@@ -54,9 +54,12 @@ async function connectToServer() {
   const cleaned = input.replace(/\/+$/, "");
 
   try {
-    const response = await fetch(`${cleaned}/api`);
+    const response = await fetch(`${cleaned}/api`, {
+      method: "GET"
+    });
+
     if (!response.ok) {
-      throw new Error("Could not connect");
+      throw new Error(`Server responded with ${response.status}`);
     }
 
     SERVER_BASE = cleaned;
@@ -66,7 +69,7 @@ async function connectToServer() {
     setStatus("Connected to server successfully.");
   } catch (err) {
     setServerStatus("Connection failed.", "error");
-    setStatus("Could not connect to that server.");
+    setStatus(err.message || "Could not connect to that server.");
   }
 }
 
