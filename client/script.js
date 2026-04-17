@@ -205,6 +205,10 @@ function clearGameSessionStorage() {
 function resetClientServer() {
   stopPolling();
   closeLobbyModal();
+  
+  // Add it here to ensure the overlay is hidden during a full reset
+  const overlay = document.getElementById('gameResultOverlay');
+  if (overlay) overlay.classList.add('hidden');
 
   currentPlayerId = null;
   currentGameId = null;
@@ -264,6 +268,8 @@ function showGame() {
 function goHome() {
   stopPolling();
   closeLobbyModal();
+  // Hide the result overlay so it's gone for the next game
+  document.getElementById('gameResultOverlay').classList.add('hidden');
   showLanding();
 }
 
@@ -746,6 +752,29 @@ async function fireShot(row, col) {
   } catch (err) {
     document.getElementById("gameStatusOnly").textContent = err.message;
   }
+}
+
+function showGameResult(winnerId) {
+  // Stop polling once the game is over
+  stopPolling();
+
+  const overlay = document.getElementById('gameResultOverlay');
+  const victoryMsg = document.getElementById('victoryMessage');
+  const defeatMsg = document.getElementById('defeatMessage');
+
+  // Compare IDs (using Number to ensure match)
+  const isWinner = Number(winnerId) === Number(currentPlayerId);
+
+  if (isWinner) {
+    victoryMsg.classList.remove('hidden');
+    defeatMsg.classList.add('hidden');
+  } else {
+    defeatMsg.classList.remove('hidden');
+    victoryMsg.classList.add('hidden');
+  }
+
+  // Show the overlay (triggers CSS animations)
+  overlay.classList.remove('hidden');
 }
 
 function renderBoards() {
