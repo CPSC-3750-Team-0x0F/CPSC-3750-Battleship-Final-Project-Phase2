@@ -823,7 +823,7 @@ button:active {
 /* --- Victory State --- */
 .result-title.victory {
   color: var(--primary);
-  text-shadow: 0 0 20px rgba(63, 159, 255, 0.4);
+  text-shadow: 0 0 20px rgba(50, 228, 64, 0.4);
   animation: victoryPulse 2s infinite ease-in-out;
 }
 
