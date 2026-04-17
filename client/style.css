@@ -90,6 +90,18 @@ body::after {
   }
 }
 
+@keyframes hitPop {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.22);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
 .container,
 .server-panel,
 .modal {
@@ -103,8 +115,15 @@ body::after {
   padding: 60px 24px 40px;
 }
 
+#landingView,
+#gameView {
+  transition: opacity 0.25s ease;
+}
+
 .hidden {
   display: none !important;
+  opacity: 0;
+  pointer-events: none;
 }
 
 h1 {
@@ -152,10 +171,21 @@ h1 {
 
 .subtitle {
   color: var(--text-soft);
-  margin-bottom: 30px;
+  margin-bottom: 40px;
   text-align: center;
   font-size: 1rem;
   letter-spacing: 0.04em;
+  position: relative;
+}
+
+.subtitle::after {
+  content: "";
+  display: block;
+  width: 80px;
+  height: 2px;
+  margin: 14px auto 0;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
 }
 
 .left-align {
@@ -171,6 +201,23 @@ h1 {
   border: 1px solid var(--border);
   box-shadow: var(--shadow-lg);
   backdrop-filter: blur(2px);
+  position: relative;
+}
+
+.card::before,
+.board-panel::before,
+.modal-card::before,
+.server-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.04) 0%,
+    rgba(255, 255, 255, 0) 30%
+  );
 }
 
 .card {
@@ -221,13 +268,17 @@ button {
   font-weight: 700;
   font-size: 0.95rem;
   cursor: pointer;
-  transition: background 0.15s ease, transform 0.1s ease;
+  transition:
+    background 0.15s ease,
+    transform 0.1s ease,
+    box-shadow 0.15s ease;
   box-shadow: none;
 }
 
 button:hover {
   background: var(--primary-hover);
   transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(63, 159, 255, 0.25);
 }
 
 button:active {
@@ -310,6 +361,9 @@ button:active {
 .board-panel {
   border-radius: var(--radius-lg);
   padding: 22px;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.04),
+    0 10px 30px rgba(0, 0, 0, 0.3);
 }
 
 .board-panel h2 {
@@ -354,6 +408,10 @@ button:active {
   cursor: pointer;
 }
 
+.cell.targetable {
+  cursor: crosshair;
+}
+
 .cell.disabled-target {
   opacity: 0.6;
   cursor: not-allowed;
@@ -373,11 +431,13 @@ button:active {
 .cell.hit {
   background: var(--success);
   border-color: rgba(46, 204, 113, 0.95);
+  animation: hitPop 0.25s ease;
 }
 
 .cell.miss {
   background: var(--danger);
   border-color: rgba(231, 76, 60, 0.95);
+  animation: hitPop 0.25s ease;
 }
 
 .game-actions {
