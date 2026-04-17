@@ -2,6 +2,9 @@ const express = require("express");
 const router = express.Router();
 const gameController = require("../controllers/gameController");
 
+// Matches GET /api/games
+router.get("/", gameController.getAllGames);
+
 // Matches POST /api/games
 router.post("/", gameController.createGame);
 
