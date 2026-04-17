@@ -243,7 +243,7 @@ exports.fireShot = async (req, res) => {
 
     const alivePlayers = [];
 
-    for (const p of players) {
+      for (const p of players) {
       const remainingShipsRes = await client.query(
         `
         SELECT COUNT(*)::int AS count
@@ -253,15 +253,11 @@ exports.fireShot = async (req, res) => {
           AND NOT EXISTS (
             SELECT 1
             FROM moves m
-            JOIN ships hit_ship
-              ON hit_ship.game_id = m.game_id
-             AND hit_ship.row = m.row
-             AND hit_ship.col = m.col
-             AND hit_ship.player_id = s.player_id
             WHERE m.game_id = s.game_id
+              AND m.row = s.row
+              AND m.col = s.col
               AND m.result = 'hit'
-              AND hit_ship.row = s.row
-              AND hit_ship.col = s.col
+              AND m.player_id != s.player_id
           )
         `,
         [gameId, p.player_id]
