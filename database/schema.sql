@@ -55,4 +55,3 @@ CREATE TABLE moves (
     move_timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     UNIQUE (game_id, player_id, row, col)
 );
-);
