@@ -189,10 +189,10 @@ exports.fireShot = async (req, res) => {
     }
 
     const shotExistsRes = await client.query(
-      "SELECT 1 FROM moves WHERE game_id = $1 AND row = $2 AND col = $3 LIMIT 1",
-      [gameId, shotRow, shotCol]
+      "SELECT 1 FROM moves WHERE game_id = $1 AND player_id = $2 AND row = $3 AND col = $4 LIMIT 1",
+      [gameId, shooterId, shotRow, shotCol]
     );
-
+    
     if (shotExistsRes.rows.length > 0) {
       await client.query("ROLLBACK");
       return res.status(409).json({ error: "conflict", message: "already fired here" });
