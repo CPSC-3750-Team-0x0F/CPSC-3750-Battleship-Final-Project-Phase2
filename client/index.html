@@ -20,25 +20,27 @@
       <h1>Ship Sinkers</h1>
       <p class="subtitle">Create or join a game</p>
 
-      <div class="card">
-        <input id="username" type="text" placeholder="Enter Username" />
-        <input id="gameId" type="number" placeholder="Enter Game ID (for join)" />
+      <div class="lobby-grid">
+        <div class="card lobby-main-card">
+          <input id="username" type="text" placeholder="Enter Username" />
+          <input id="gameId" type="number" placeholder="Enter Game ID (for join)" />
 
-        <div class="buttons">
-          <button onclick="openCreateGameModal()">Create Game</button>
-          <button onclick="joinGame()">Join Game</button>
-          <button onclick="playBot()">Play Bot</button>
-        </div>
-      </div>
-
-      <div class="card available-games-card">
-        <div class="available-games-header">
-          <h2>Available Games</h2>
-          <button class="secondary-btn" onclick="loadAvailableGames()">Refresh List</button>
+          <div class="buttons">
+            <button onclick="openCreateGameModal()">Create Game</button>
+            <button onclick="joinGame()">Join Game</button>
+            <button onclick="playBot()">Play Bot</button>
+          </div>
         </div>
 
-        <div id="availableGamesList" class="available-games-list">
-          <p class="empty-games">No games loaded yet.</p>
+        <div class="card available-games-card">
+          <div class="available-games-header">
+            <h2>Available Games</h2>
+            <button class="secondary-btn" onclick="loadAvailableGames()">Refresh List</button>
+          </div>
+
+          <div id="availableGamesList" class="available-games-list">
+            <p class="empty-games">No games loaded yet.</p>
+          </div>
         </div>
       </div>
 
