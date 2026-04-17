@@ -570,9 +570,16 @@ async function refreshGameState(silent = false) {
     renderGameInfo(currentGameData);
     renderBoards();
     renderMoveHistory(currentGameData.moves);
+
+    // --- PART 1: Win/Loss Detection ---
+    if (currentGameData && currentGameData.status === 'finished') {
+      showGameResult(currentGameData.winner_id);
+    }
+
   } catch (err) {
     if (!silent) {
-      document.getElementById("gameStatusOnly").textContent = err.message;
+      const statusEl = document.getElementById("gameStatusOnly");
+      if (statusEl) statusEl.textContent = err.message;
       setStatus(err.message);
     }
   }

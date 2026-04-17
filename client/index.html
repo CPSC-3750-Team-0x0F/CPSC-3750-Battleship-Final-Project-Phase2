@@ -150,5 +150,21 @@
   </div>
 
   <script src="script.js"></script>
+<div id="gameResultOverlay" class="result-overlay hidden">
+    <div class="result-content">
+      <div id="victoryMessage" class="hidden">
+        <h1 class="result-title victory">VICTORY</h1>
+        <p class="result-subtitle">Enemy fleet neutralized.</p>
+      </div>
+      <div id="defeatMessage" class="hidden">
+        <h1 class="result-title defeat">DEFEAT</h1>
+        <p class="result-subtitle">Your fleet has been sunk.</p>
+      </div>
+      <div class="result-actions">
+        <button id="playAgainBtn" class="primary-btn">Play Again</button>
+        <button id="exitGameBtn" class="secondary-btn">Exit Game</button>
+      </div>
+    </div>
+  </div>
 </body>
 </html>
