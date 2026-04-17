@@ -865,3 +865,45 @@ button:active {
   opacity: 0;
   pointer-events: none;
 }
+
+/* Game Result Overlay */
+.result-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 10, 18, 0.95);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  backdrop-filter: blur(10px);
+}
+
+.result-content {
+  text-align: center;
+  padding: 40px;
+  border-radius: var(--radius-lg);
+  background: var(--panel-strong);
+  border: 2px solid var(--border);
+  box-shadow: var(--shadow-lg);
+}
+
+.result-title {
+  font-size: 5rem;
+  margin: 0;
+  letter-spacing: 0.1em;
+}
+
+.result-title.victory { color: var(--success); text-shadow: 0 0 20px rgba(46, 204, 113, 0.4); }
+.result-title.defeat { color: var(--danger); text-shadow: 0 0 20px rgba(231, 76, 60, 0.4); }
+
+.result-subtitle {
+  font-size: 1.2rem;
+  color: var(--text-soft);
+  margin-bottom: 30px;
+}
+
+.result-actions {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+}
