@@ -397,17 +397,6 @@ button:active {
   cursor: pointer;
 }
 
-#enemyBoard .cell,
-#enemyBoard .cell:hover {
-  cursor: crosshair;
-}
-
-#enemyBoard .cell.hit,
-#enemyBoard .cell.miss,
-#enemyBoard .cell.disabled-target {
-  cursor: not-allowed;
-}
-
 .cell.disabled-target {
   opacity: 0.6;
   cursor: not-allowed;
