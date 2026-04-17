@@ -111,7 +111,7 @@ async function loadAvailableGames() {
 }
 
 function formatMoveTimestamp(value) {
-  if (!value) return "No timestamp";
+  if (!value) return "";
 
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) {
@@ -130,28 +130,26 @@ function renderMoveHistory(moves = []) {
     return;
   }
 
-  const sortedMoves = [...moves].sort((a, b) => {
-    const aTime = new Date(a.timestamp || a.created_at || a.move_time || 0).getTime();
-    const bTime = new Date(b.timestamp || b.created_at || b.move_time || 0).getTime();
-    return bTime - aTime;
-  });
+  const sortedMoves = [...moves].reverse();
 
   container.innerHTML = sortedMoves
-    .map((move) => {
+    .map((move, index) => {
       const row = Number(move.row);
       const col = Number(move.col);
       const result = String(move.result || (move.hit ? "hit" : "miss")).toLowerCase();
       const isYou = Number(move.player_id) === Number(currentPlayerId);
       const playerLabel = isYou ? "You" : "Opponent";
-      const timestamp = formatMoveTimestamp(
-        move.timestamp || move.created_at || move.move_time
-      );
+
+      const timestampValue = move.timestamp || move.created_at || move.move_time;
+      const formattedTimestamp = formatMoveTimestamp(timestampValue);
 
       return `
         <div class="move-history-item">
           <div class="move-history-main">
             <div class="move-history-shot">${playerLabel} fired at (${row}, ${col})</div>
-            <div class="move-history-meta">${timestamp}</div>
+            <div class="move-history-meta">
+              Move #${moves.length - index}${formattedTimestamp ? ` • ${formattedTimestamp}` : ""}
+            </div>
           </div>
           <div class="move-result ${result}">${result.toUpperCase()}</div>
         </div>

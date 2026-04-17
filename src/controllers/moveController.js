@@ -192,19 +192,30 @@ exports.fireShot = async (req, res) => {
       "SELECT 1 FROM moves WHERE game_id = $1 AND player_id = $2 AND row = $3 AND col = $4 LIMIT 1",
       [gameId, shooterId, shotRow, shotCol]
     );
-    
+
     if (shotExistsRes.rows.length > 0) {
       await client.query("ROLLBACK");
       return res.status(409).json({ error: "conflict", message: "already fired here" });
     }
 
+    // Find whether this shot hit an opponent ship
     const hitRes = await client.query(
-      `SELECT player_id FROM ships 
-       WHERE game_id = $1 AND row = $2 AND col = $3 AND player_id != $4`,
+      `
+      SELECT player_id
+      FROM ships
+      WHERE game_id = $1
+        AND row = $2
+        AND col = $3
+        AND player_id != $4
+      LIMIT 1
+      `,
       [gameId, shotRow, shotCol, shooterId]
     );
 
-    const result = hitRes.rows.length > 0 ? "hit" : "miss";
+    const hitOpponentId =
+      hitRes.rows.length > 0 ? Number(hitRes.rows[0].player_id) : null;
+
+    const result = hitOpponentId !== null ? "hit" : "miss";
 
     await client.query(
       "INSERT INTO moves (game_id, player_id, row, col, result) VALUES ($1, $2, $3, $4, $5)",
@@ -225,22 +236,37 @@ exports.fireShot = async (req, res) => {
       [gameId]
     );
 
-    const players = playersRes.rows.map(p => ({
+    const players = playersRes.rows.map((p) => ({
       player_id: Number(p.player_id),
       turn_order: Number(p.turn_order)
     }));
 
     const alivePlayers = [];
+
     for (const p of players) {
       const remainingShipsRes = await client.query(
-        `SELECT COUNT(*)::int AS count FROM ships s
-         WHERE s.game_id = $1 AND s.player_id = $2
-         AND NOT EXISTS (
-           SELECT 1 FROM moves m 
-           WHERE m.game_id = s.game_id AND m.row = s.row AND m.col = s.col AND m.result = 'hit'
-         )`,
+        `
+        SELECT COUNT(*)::int AS count
+        FROM ships s
+        WHERE s.game_id = $1
+          AND s.player_id = $2
+          AND NOT EXISTS (
+            SELECT 1
+            FROM moves m
+            JOIN ships hit_ship
+              ON hit_ship.game_id = m.game_id
+             AND hit_ship.row = m.row
+             AND hit_ship.col = m.col
+             AND hit_ship.player_id = s.player_id
+            WHERE m.game_id = s.game_id
+              AND m.result = 'hit'
+              AND hit_ship.row = s.row
+              AND hit_ship.col = s.col
+          )
+        `,
         [gameId, p.player_id]
       );
+
       if (Number(remainingShipsRes.rows[0].count) > 0) {
         alivePlayers.push(p);
       }
@@ -255,13 +281,25 @@ exports.fireShot = async (req, res) => {
         [winnerId, gameId]
       );
 
-      await client.query("UPDATE players SET wins = wins + 1, games_played = games_played + 1 WHERE player_id = $1", [winnerId]);
       await client.query(
-        "UPDATE players SET losses = losses + 1, games_played = games_played + 1 WHERE player_id IN (SELECT player_id FROM game_players WHERE game_id = $1 AND player_id != $2)",
+        "UPDATE players SET wins = wins + 1, games_played = games_played + 1 WHERE player_id = $1",
+        [winnerId]
+      );
+
+      await client.query(
+        `
+        UPDATE players
+        SET losses = losses + 1, games_played = games_played + 1
+        WHERE player_id IN (
+          SELECT player_id
+          FROM game_players
+          WHERE game_id = $1 AND player_id != $2
+        )
+        `,
         [gameId, winnerId]
       );
     } else {
-      const currentIdx = players.findIndex(p => p.turn_order === currentTurnIndex);
+      const currentIdx = players.findIndex((p) => p.turn_order === currentTurnIndex);
       const nextIdx = (currentIdx + 1) % players.length;
       const nextTurnIndex = players[nextIdx].turn_order;
       next_player_id = players[nextIdx].player_id;
@@ -281,7 +319,9 @@ exports.fireShot = async (req, res) => {
       winner_id: winnerId
     });
   } catch (err) {
-    try { await client.query("ROLLBACK"); } catch (_) {}
+    try {
+      await client.query("ROLLBACK");
+    } catch (_) {}
     console.error("fireShot error:", err);
     return res.status(500).json({ error: "server_error", message: "database error" });
   } finally {
