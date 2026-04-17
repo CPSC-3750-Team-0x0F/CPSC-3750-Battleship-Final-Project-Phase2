@@ -27,6 +27,10 @@
   box-sizing: border-box;
 }
 
+html {
+  min-height: 100%;
+}
+
 body {
   margin: 0;
   font-family: Arial, sans-serif;
@@ -38,6 +42,59 @@ body {
     var(--bg-mid) 58%,
     var(--bg-light) 100%
   );
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* subtle grid overlay */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 34px 34px;
+  opacity: 0.18;
+}
+
+/* scanning sweep */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(90, 170, 255, 0.02) 35%,
+    rgba(90, 170, 255, 0.08) 48%,
+    rgba(90, 170, 255, 0.12) 50%,
+    rgba(90, 170, 255, 0.08) 52%,
+    rgba(90, 170, 255, 0.02) 65%,
+    transparent 100%
+  );
+  opacity: 0.55;
+  animation: scanSweep 7s linear infinite;
+}
+
+@keyframes scanSweep {
+  0% {
+    transform: translateY(-100%);
+  }
+  100% {
+    transform: translateY(100%);
+  }
+}
+
+.container,
+.server-panel,
+.modal {
+  position: relative;
+  z-index: 1;
 }
 
 .container {
@@ -60,15 +117,37 @@ h1 {
 }
 
 .hero-title {
-  font-size: clamp(3rem, 5vw, 4rem);
+  font-size: clamp(3rem, 5vw, 4.35rem);
+  line-height: 0.98;
   font-weight: 900;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   text-align: center;
-  margin: 0 0 6px;
+  margin: 0 0 8px;
   color: #ffffff;
+  position: relative;
   text-shadow:
-    0 2px 0 rgba(255, 255, 255, 0.04),
-    0 8px 20px rgba(0, 0, 0, 0.4);
+    0 1px 0 rgba(255, 255, 255, 0.05),
+    0 10px 24px rgba(0, 0, 0, 0.45),
+    0 0 18px rgba(63, 159, 255, 0.12);
+}
+
+.hero-title::after {
+  content: "";
+  display: block;
+  width: min(220px, 44%);
+  height: 3px;
+  margin: 12px auto 0;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(63, 159, 255, 0.2) 15%,
+    rgba(63, 159, 255, 0.95) 50%,
+    rgba(63, 159, 255, 0.2) 85%,
+    transparent 100%
+  );
+  box-shadow: 0 0 12px rgba(63, 159, 255, 0.25);
 }
 
 .subtitle {
@@ -76,6 +155,7 @@ h1 {
   margin-bottom: 30px;
   text-align: center;
   font-size: 1rem;
+  letter-spacing: 0.04em;
 }
 
 .left-align {
@@ -87,9 +167,10 @@ h1 {
 .board-panel,
 .modal-card,
 .server-panel {
-  background: var(--panel);
+  background: rgba(20, 38, 60, 0.94);
   border: 1px solid var(--border);
   box-shadow: var(--shadow-lg);
+  backdrop-filter: blur(2px);
 }
 
 .card {
