@@ -46,7 +46,6 @@ body {
   overflow-x: hidden;
 }
 
-/* subtle grid overlay */
 body::before {
   content: "";
   position: fixed;
@@ -60,7 +59,6 @@ body::before {
   opacity: 0.18;
 }
 
-/* scanning sweep */
 body::after {
   content: "";
   position: fixed;
@@ -123,40 +121,6 @@ h1 {
   font-weight: 800;
 }
 
-.hero-title {
-  font-size: clamp(3rem, 5vw, 4.35rem);
-  line-height: 0.98;
-  font-weight: 900;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  text-align: center;
-  margin: 0 0 8px;
-  color: #ffffff;
-  position: relative;
-  text-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.05),
-    0 10px 24px rgba(0, 0, 0, 0.45),
-    0 0 18px rgba(63, 159, 255, 0.12);
-}
-
-.hero-title::after {
-  content: "";
-  display: block;
-  width: min(220px, 44%);
-  height: 3px;
-  margin: 12px auto 0;
-  border-radius: 999px;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(63, 159, 255, 0.2) 15%,
-    rgba(63, 159, 255, 0.95) 50%,
-    rgba(63, 159, 255, 0.2) 85%,
-    transparent 100%
-  );
-  box-shadow: 0 0 12px rgba(63, 159, 255, 0.25);
-}
-
 .subtitle {
   color: var(--text-soft);
   margin-bottom: 40px;
@@ -184,7 +148,8 @@ h1 {
 .card,
 .board-panel,
 .modal-card,
-.server-panel {
+.server-panel,
+.history-panel {
   background: rgba(20, 38, 60, 0.94);
   border: 1px solid var(--border);
   box-shadow: var(--shadow-lg);
@@ -195,7 +160,8 @@ h1 {
 .card::before,
 .board-panel::before,
 .modal-card::before,
-.server-panel::before {
+.server-panel::before,
+.history-panel::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -422,6 +388,100 @@ button:active {
   border-color: rgba(231, 76, 60, 0.95);
 }
 
+/* move history */
+.history-panel {
+  margin-top: 28px;
+  border-radius: var(--radius-lg);
+  padding: 22px;
+}
+
+.history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.history-header h2 {
+  margin: 0;
+  font-size: 1.18rem;
+  letter-spacing: -0.02em;
+}
+
+.move-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 260px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 6px;
+}
+
+.move-history-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+}
+
+.move-history-main {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.move-history-shot {
+  font-weight: 700;
+}
+
+.move-history-meta {
+  color: var(--text-soft);
+  font-size: 0.92rem;
+}
+
+.move-result {
+  font-weight: 800;
+  font-size: 0.9rem;
+  padding: 6px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.move-result.hit {
+  background: rgba(46, 204, 113, 0.18);
+  color: var(--success);
+}
+
+.move-result.miss {
+  background: rgba(231, 76, 60, 0.18);
+  color: var(--danger);
+}
+
+.empty-history {
+  margin: 0;
+  opacity: 0.8;
+  text-align: center;
+  padding: 20px 0;
+  font-style: italic;
+}
+
+.move-history-list::-webkit-scrollbar,
+.available-games-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.move-history-list::-webkit-scrollbar-thumb,
+.available-games-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+}
+
 .game-actions {
   margin-top: 26px;
   text-align: center;
@@ -538,7 +598,6 @@ button:active {
   padding-top: 22px;
 }
 
-/* landing page lobby layout */
 .lobby-grid {
   display: flex;
   justify-content: center;
@@ -617,15 +676,6 @@ button:active {
   font-style: italic;
 }
 
-.available-games-list::-webkit-scrollbar {
-  width: 6px;
-}
-
-.available-games-list::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 10px;
-}
-
 @media (max-width: 1100px) {
   .server-panel {
     position: static;
@@ -658,7 +708,8 @@ button:active {
     padding: 28px 16px 32px;
   }
 
-  .board-panel {
+  .board-panel,
+  .history-panel {
     padding: 20px 16px;
   }
 
@@ -672,10 +723,16 @@ button:active {
     width: 100%;
     max-width: 420px;
   }
+
+  .history-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }
 
 @media (max-width: 700px) {
-  .game-list-item {
+  .game-list-item,
+  .move-history-item {
     flex-direction: column;
     align-items: flex-start;
   }

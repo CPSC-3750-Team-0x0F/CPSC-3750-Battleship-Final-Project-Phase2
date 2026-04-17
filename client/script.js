@@ -44,7 +44,6 @@ function updateServerDisplay() {
 
 function renderAvailableGames(games) {
   const container = document.getElementById("availableGamesList");
-
   if (!container) return;
 
   if (!Array.isArray(games) || games.length === 0) {
@@ -109,6 +108,56 @@ async function loadAvailableGames() {
     }
     setStatus(err.message || "Error loading available games");
   }
+}
+
+function formatMoveTimestamp(value) {
+  if (!value) return "No timestamp";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return String(value);
+  }
+
+  return date.toLocaleString();
+}
+
+function renderMoveHistory(moves = []) {
+  const container = document.getElementById("moveHistoryList");
+  if (!container) return;
+
+  if (!Array.isArray(moves) || moves.length === 0) {
+    container.innerHTML = `<p class="empty-history">No moves yet.</p>`;
+    return;
+  }
+
+  const sortedMoves = [...moves].sort((a, b) => {
+    const aTime = new Date(a.timestamp || a.created_at || a.move_time || 0).getTime();
+    const bTime = new Date(b.timestamp || b.created_at || b.move_time || 0).getTime();
+    return bTime - aTime;
+  });
+
+  container.innerHTML = sortedMoves
+    .map((move) => {
+      const row = Number(move.row);
+      const col = Number(move.col);
+      const result = String(move.result || (move.hit ? "hit" : "miss")).toLowerCase();
+      const isYou = Number(move.player_id) === Number(currentPlayerId);
+      const playerLabel = isYou ? "You" : "Opponent";
+      const timestamp = formatMoveTimestamp(
+        move.timestamp || move.created_at || move.move_time
+      );
+
+      return `
+        <div class="move-history-item">
+          <div class="move-history-main">
+            <div class="move-history-shot">${playerLabel} fired at (${row}, ${col})</div>
+            <div class="move-history-meta">${timestamp}</div>
+          </div>
+          <div class="move-result ${result}">${result.toUpperCase()}</div>
+        </div>
+      `;
+    })
+    .join("");
 }
 
 async function connectToServer() {
@@ -184,6 +233,11 @@ function resetClientServer() {
   const gamesList = document.getElementById("availableGamesList");
   if (gamesList) {
     gamesList.innerHTML = `<p class="empty-games">No games loaded yet.</p>`;
+  }
+
+  const historyList = document.getElementById("moveHistoryList");
+  if (historyList) {
+    historyList.innerHTML = `<p class="empty-history">No moves yet.</p>`;
   }
 
   showLanding();
@@ -517,6 +571,7 @@ async function refreshGameState(silent = false) {
     updateLobbyDisplay(currentGameData);
     renderGameInfo(currentGameData);
     renderBoards();
+    renderMoveHistory(currentGameData.moves);
   } catch (err) {
     if (!silent) {
       document.getElementById("gameStatusOnly").textContent = err.message;

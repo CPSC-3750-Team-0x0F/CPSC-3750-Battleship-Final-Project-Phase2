@@ -75,6 +75,16 @@
         </div>
       </div>
 
+      <div class="history-panel">
+        <div class="history-header">
+          <h2>Move History</h2>
+          <button class="secondary-btn" onclick="refreshGameState()">Refresh History</button>
+        </div>
+        <div id="moveHistoryList" class="move-history-list">
+          <p class="empty-history">No moves yet.</p>
+        </div>
+      </div>
+
       <div class="game-actions">
         <button id="startPlacementBtn" class="hidden" onclick="enablePlacementMode()">
           Start Ship Placement
