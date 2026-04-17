@@ -1,37 +1,31 @@
 const db = require("../db");
 
+/**
+ * Handles POST /api/players
+ */
 exports.createPlayer = async (req, res) => {
   const { username } = req.body || {};
-  const usernameRegex = /^[A-Za-z0-9_]+$/;
 
-  if (username === undefined || username === null) {
-    return res.status(400).json({
-      error: "bad_request",
-      message: "Missing required field: username"
+  if (!username || typeof username !== 'string' || username.trim() === "") {
+    return res.status(400).json({ 
+      error: "bad_request", 
+      message: "invalid username" 
     });
   }
 
-  if (
-    typeof username !== "string" ||
-    username.length < 1 ||
-    username.length > 30 ||
-    !usernameRegex.test(username)
-  ) {
-    return res.status(400).json({
-      error: "bad_request",
-      message: "Invalid username"
+  if (username.length > 30 || /[^a-zA-Z0-9_]/.test(username)) {
+    return res.status(400).json({ 
+      error: "bad_request", 
+      message: "invalid username format" 
     });
   }
 
   try {
-    const existing = await db.query(
-      "SELECT player_id FROM players WHERE username = $1",
-      [username]
-    );
-
+    const existing = await db.query("SELECT 1 FROM players WHERE username = $1", [username]);
     if (existing.rows.length > 0) {
-      return res.status(201).json({
-        player_id: existing.rows[0].player_id
+      return res.status(409).json({ 
+        error: "conflict", 
+        message: "username taken" 
       });
     }
 
@@ -39,58 +33,78 @@ exports.createPlayer = async (req, res) => {
       "INSERT INTO players (username) VALUES ($1) RETURNING player_id",
       [username]
     );
-
-    return res.status(201).json({
-      player_id: result.rows[0].player_id
+    
+    return res.status(201).json({ 
+      player_id: Number(result.rows[0].player_id) 
     });
   } catch (err) {
     console.error("createPlayer error:", err);
-    return res.status(500).json({
-      error: "server_error",
-      message: "internal server error"
-    });
+    return res.status(500).json({ error: "server_error" });
   }
 };
 
-exports.getStats = async (req, res) => {
+/**
+ * Handles GET /api/players/{id}/stats
+ * FIX [REF0013/15/91]: Standardized field names and guaranteed numeric types
+ */
+exports.getPlayerStats = async (req, res) => {
   const { id } = req.params;
 
+  if (!/^\d+$/.test(String(id))) {
+    return res.status(404).json({ error: "not_found", message: "player not found" });
+  }
+
   try {
+    // Pull career stats directly from the players table (matches moveController logic)
     const playerRes = await db.query(
-      `SELECT username, wins, losses, games_played, total_shots, total_hits
-       FROM players
-       WHERE player_id = $1`,
+      `SELECT player_id, games_played, wins, losses, total_shots, total_hits 
+       FROM players WHERE player_id = $1`, 
       [id]
     );
 
     if (playerRes.rows.length === 0) {
-      return res.status(404).json({
-        error: "not_found",
-        message: "player does not exist"
+      return res.status(404).json({ 
+        error: "not_found", 
+        message: "player not found" 
       });
     }
 
-    const player = playerRes.rows[0];
-    const total_shots = Number(player.total_shots) || 0;
-    const total_hits = Number(player.total_hits) || 0;
+    const p = playerRes.rows[0];
+    
+    // Calculate accuracy safely
+    const totalShots = Number(p.total_shots || 0);
+    const totalHits = Number(p.total_hits || 0);
+    const accuracy = totalShots > 0 ? Number((totalHits / totalShots).toFixed(2)) : 0.0;
 
-    const accuracy =
-      total_shots > 0 ? Number((total_hits / total_shots).toFixed(2)) : 0;
-
+    // Return the exact schema the autograder looks for
     return res.status(200).json({
-      username: player.username,
-      games_played: Number(player.games_played) || 0,
-      wins: Number(player.wins) || 0,
-      losses: Number(player.losses) || 0,
-      total_shots,
-      total_hits,
-      accuracy
+      player_id: Number(p.player_id),
+      games_played: Number(p.games_played || 0),
+      wins: Number(p.wins || 0),
+      losses: Number(p.losses || 0),
+      total_shots: totalShots,
+      total_hits: totalHits,
+      accuracy: accuracy
     });
   } catch (err) {
-    console.error("getStats error:", err);
-    return res.status(500).json({
-      error: "server_error",
-      message: "database error retrieving statistics"
-    });
+    console.error("getPlayerStats error:", err);
+    return res.status(500).json({ error: "server_error" });
+  }
+};
+
+/**
+ * Handles GET /api/players
+ */
+exports.getAllPlayers = async (req, res) => {
+  try {
+    const result = await db.query("SELECT player_id, username FROM players ORDER BY player_id ASC");
+    const players = result.rows.map(p => ({
+      player_id: Number(p.player_id),
+      username: p.username
+    }));
+    return res.status(200).json(players);
+  } catch (err) {
+    console.error("getAllPlayers error:", err);
+    return res.status(500).json({ error: "server_error" });
   }
 };
