@@ -44,6 +44,7 @@ function updateServerDisplay() {
 
 function renderAvailableGames(games) {
   const container = document.getElementById("availableGamesList");
+
   if (!container) return;
 
   if (!Array.isArray(games) || games.length === 0) {
@@ -53,13 +54,7 @@ function renderAvailableGames(games) {
 
   const openGames = games.filter((game) => {
     const status = String(game.status || "").toLowerCase();
-    const activePlayers = Number(game.active_players || 0);
-    const maxPlayers = Number(game.max_players || 2);
-
-    return (
-      (status === "waiting" || status === "waiting_setup" || status === "active") &&
-      activePlayers < maxPlayers
-    );
+    return status === "waiting" || status === "waiting_setup";
   });
 
   if (openGames.length === 0) {
@@ -69,21 +64,16 @@ function renderAvailableGames(games) {
 
   container.innerHTML = openGames
     .map((game) => {
-      const gameId = game.game_id ?? "Unknown";
-      const gridSize = game.grid_size ?? "?";
-      const activePlayers = Number(game.active_players || 0);
-      const maxPlayers = Number(game.max_players || 2);
-      const status = game.status || "unknown";
+      const gameId = game.game_id;
+      const status = game.status;
 
       return `
         <div class="game-list-item">
           <div class="game-list-info">
             <p><strong>Game ID:</strong> ${gameId}</p>
             <p><strong>Status:</strong> ${status}</p>
-            <p><strong>Board:</strong> ${gridSize} x ${gridSize}</p>
-            <p><strong>Players:</strong> ${activePlayers} / ${maxPlayers}</p>
           </div>
-          <button onclick="selectGameFromList(${gameId})">Join This Game</button>
+          <button onclick="selectGameFromList(${gameId})">Join</button>
         </div>
       `;
     })

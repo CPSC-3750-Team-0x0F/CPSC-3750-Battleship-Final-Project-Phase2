@@ -605,8 +605,9 @@ button:active {
     width: 100%;
     min-width: 0;
   }
+}
 
-  .available-games-card {
+.available-games-card {
   margin-top: 20px;
   text-align: left;
 }
@@ -627,6 +628,12 @@ button:active {
   display: flex;
   flex-direction: column;
   gap: 12px;
+
+  height: 320px;         /* locked size */
+  max-height: 320px;     /* keeps it from growing */
+  overflow-y: auto;      /* vertical scroll */
+  overflow-x: hidden;
+  padding-right: 6px;
 }
 
 .game-list-item {
@@ -638,6 +645,7 @@ button:active {
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.12);
+  flex-shrink: 0;        /* prevents cards from shrinking weirdly */
 }
 
 .game-list-info p {
@@ -659,6 +667,10 @@ button:active {
     flex-direction: column;
     align-items: flex-start;
   }
-}
 
+  .available-games-list {
+    height: 260px;
+    max-height: 260px;
+  }
+  
 }
