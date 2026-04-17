@@ -62,7 +62,6 @@ exports.createGame = async (req, res) => {
     );
 
     if (playerCheck.rows.length === 0) {
-      client.release();
       return res.status(400).json({ error: "bad_request", message: "player does not exist" });
     }
 
@@ -207,9 +206,9 @@ exports.getGame = async (req, res) => {
 
   // FIX [REF0035/76]: Ensure negative or huge non-existent IDs return 404
   if (!isStrictInt(id) || Number(id) < 0) {
-    return res.status(404).json({ 
-      error: "not_found", 
-      message: "game not found" 
+    return res.status(404).json({
+      error: "not_found",
+      message: "game not found"
     });
   }
 
@@ -224,9 +223,9 @@ exports.getGame = async (req, res) => {
     );
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ 
-        error: "not_found", 
-        message: "game not found" 
+      return res.status(404).json({
+        error: "not_found",
+        message: "game not found"
       });
     }
 
@@ -261,20 +260,25 @@ exports.getGame = async (req, res) => {
       [gameId]
     );
 
+    const players = playersRes.rows.map((p) => ({
+      player_id: Number(p.player_id),
+      ships_remaining: Number(p.ships_remaining)
+    }));
+
     return res.status(200).json({
       game_id: Number(game.game_id),
       grid_size: Number(game.grid_size),
       status: game.status,
-      players: playersRes.rows.map((p) => ({
-        player_id: Number(p.player_id),
-        ships_remaining: Number(p.ships_remaining)
-      })),
+      current_turn_index: Number(game.current_turn_index),
+      max_players: Number(game.max_players),
+      active_players: players.length,
+      players,
       current_turn_player_id: current_turn_player_id ? Number(current_turn_player_id) : null,
       total_moves: Number(moveRes.rows[0].count || 0)
     });
   } catch (err) {
     console.error("getGame error:", err);
-    return res.status(500).json({ 
+    return res.status(500).json({
       error: "server_error",
       message: "internal database error"
     });
