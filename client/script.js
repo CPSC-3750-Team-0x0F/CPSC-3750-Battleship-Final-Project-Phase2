@@ -132,30 +132,38 @@ function renderMoveHistory(moves = []) {
 
   const sortedMoves = [...moves].reverse();
 
-  container.innerHTML = sortedMoves
-    .map((move, index) => {
-      const row = Number(move.row);
-      const col = Number(move.col);
-      const result = String(move.result || (move.hit ? "hit" : "miss")).toLowerCase();
-      const isYou = Number(move.player_id) === Number(currentPlayerId);
-      const playerLabel = isYou ? "You" : "Opponent";
+container.innerHTML = sortedMoves
+  .map((move, index) => {
+    const row = Number(move.row);
+    const col = Number(move.col);
+    const result = String(move.result || (move.hit ? "hit" : "miss")).toLowerCase();
+    const isYou = Number(move.player_id) === Number(currentPlayerId);
+    const playerLabel = isYou ? "You" : "Opponent";
 
-      const timestampValue = move.timestamp || move.created_at || move.move_time;
-      const formattedTimestamp = formatMoveTimestamp(timestampValue);
+    const timestampValue =
+      move.timestamp || move.created_at || move.move_time || move.move_timestamp;
+    const formattedTimestamp = formatMoveTimestamp(timestampValue);
 
-      return `
-        <div class="move-history-item">
-          <div class="move-history-main">
-            <div class="move-history-shot">${playerLabel} fired at (${row}, ${col})</div>
-            <div class="move-history-meta">
-              Move #${moves.length - index}${formattedTimestamp ? ` • ${formattedTimestamp}` : ""}
-            </div>
+    return `
+      <div class="move-history-item">
+        <div class="move-history-main">
+          <div class="move-history-shot">
+            ${playerLabel} fired at (${row}, ${col})
           </div>
-          <div class="move-result ${result}">${result.toUpperCase()}</div>
+
+          <div class="move-history-meta">
+            Move #${sortedMoves.length - index}
+            ${formattedTimestamp ? ` <span class="move-timestamp">${formattedTimestamp}</span>` : ""}
+          </div>
         </div>
-      `;
-    })
-    .join("");
+
+        <div class="move-result ${result}">
+          ${result.toUpperCase()}
+        </div>
+      </div>
+    `;
+  })
+  .join("");
 }
 
 async function connectToServer() {

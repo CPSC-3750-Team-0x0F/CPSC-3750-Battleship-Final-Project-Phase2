@@ -339,7 +339,7 @@ exports.getMoves = async (req, res) => {
     }
 
     const result = await db.query(
-      "SELECT player_id, row, col, result FROM moves WHERE game_id = $1 ORDER BY move_id ASC",
+      "SELECT player_id, row, col, result, move_timestamp FROM moves WHERE game_id = $1 ORDER BY move_id ASC",
       [Number(id)]
     );
 
@@ -347,7 +347,8 @@ exports.getMoves = async (req, res) => {
       player_id: Number(row.player_id),
       row: Number(row.row),
       col: Number(row.col),
-      result: row.result
+      result: row.result,
+      move_timestamp: row.move_timestamp
     })));
   } catch (err) {
     console.error("getMoves error:", err);

@@ -953,3 +953,11 @@ button:active {
   color: var(--text-main);
   font-variant-numeric: tabular-nums;
 }
+
+.move-timestamp {
+  margin-left: 6px;
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.35);
+  font-weight: 400;
+  letter-spacing: 0.03em;
+}
