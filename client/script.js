@@ -754,29 +754,32 @@ async function fireShot(row, col) {
   }
 }
 
-function showGameResult(winnerId) {
+async function showGameResult(winnerId) {
   if (winnerId == null) return;
 
   stopPolling();
 
-  const overlay = document.getElementById('gameResultOverlay');
-  const victoryMsg = document.getElementById('victoryMessage');
-  const defeatMsg = document.getElementById('defeatMessage');
-
-  console.log("Winner ID from server:", winnerId);
-  console.log("Current Player ID:", currentPlayerId);
+  const overlay = document.getElementById("gameResultOverlay");
+  const victoryMsg = document.getElementById("victoryMessage");
+  const defeatMsg = document.getElementById("defeatMessage");
+  const statsBox = document.getElementById("resultStats");
 
   const isWinner = Number(winnerId) === Number(currentPlayerId);
 
   if (isWinner) {
-    victoryMsg.classList.remove('hidden');
-    defeatMsg.classList.add('hidden');
+    victoryMsg.classList.remove("hidden");
+    defeatMsg.classList.add("hidden");
   } else {
-    defeatMsg.classList.remove('hidden');
-    victoryMsg.classList.add('hidden');
+    defeatMsg.classList.remove("hidden");
+    victoryMsg.classList.add("hidden");
   }
 
-  overlay.classList.remove('hidden');
+  if (statsBox) statsBox.classList.add("hidden");
+  resetResultStatsDisplay();
+
+  overlay.classList.remove("hidden");
+
+  await loadResultStats();
 }
 
 function renderBoards() {
@@ -853,3 +856,66 @@ window.addEventListener("load", () => {
     });
   }
 });
+
+function animateNumber(element, endValue, suffix = "", duration = 900) {
+  if (!element) return;
+
+  const startValue = 0;
+  const startTime = performance.now();
+
+  function update(currentTime) {
+    const elapsed = currentTime - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+
+    const easedProgress = 1 - Math.pow(1 - progress, 3);
+    const currentValue = Math.round(startValue + (endValue - startValue) * easedProgress);
+
+    element.textContent = `${currentValue}${suffix}`;
+
+    if (progress < 1) {
+      requestAnimationFrame(update);
+    }
+  }
+
+  requestAnimationFrame(update);
+}
+
+function resetResultStatsDisplay() {
+  const accuracyEl = document.getElementById("resultAccuracy");
+  const hitsEl = document.getElementById("resultHits");
+  const missesEl = document.getElementById("resultMisses");
+
+  if (accuracyEl) accuracyEl.textContent = "0%";
+  if (hitsEl) hitsEl.textContent = "0";
+  if (missesEl) missesEl.textContent = "0";
+}
+
+async function loadResultStats() {
+  if (!currentPlayerId || !SERVER_BASE) return;
+
+  try {
+    const res = await fetch(`${getApiBase()}/players/${currentPlayerId}/stats`);
+    const data = await res.json();
+
+    if (!res.ok) throw new Error(data.message || "Failed to load stats");
+
+    const hits = Number(data.total_hits || 0);
+    const shots = Number(data.total_shots || 0);
+    const misses = Math.max(0, shots - hits);
+    const accuracy = shots > 0 ? Math.round((hits / shots) * 100) : 0;
+
+    const accuracyEl = document.getElementById("resultAccuracy");
+    const hitsEl = document.getElementById("resultHits");
+    const missesEl = document.getElementById("resultMisses");
+    const statsBox = document.getElementById("resultStats");
+
+    resetResultStatsDisplay();
+    statsBox.classList.remove("hidden");
+
+    animateNumber(accuracyEl, accuracy, "%", 1000);
+    animateNumber(hitsEl, hits, "", 900);
+    animateNumber(missesEl, misses, "", 900);
+  } catch (err) {
+    console.error("Stats load failed:", err);
+  }
+}
