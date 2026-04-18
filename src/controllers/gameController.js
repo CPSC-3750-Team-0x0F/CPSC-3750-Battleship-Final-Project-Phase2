@@ -46,7 +46,7 @@ exports.createGame = async (req, res) => {
   const maxPlayers = Number(max_players);
 
   if (gridSize < 5 || gridSize > 15) {
-    return res.status(400).json({ error: "grid_size must be between 5 and 15" });
+    return res.status(400).json({ error: "bad_request", message: "grid_size must be between 5 and 15" });
   }
 
   if (maxPlayers < 2 || maxPlayers > 10) {
