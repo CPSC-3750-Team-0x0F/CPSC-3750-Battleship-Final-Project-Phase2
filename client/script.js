@@ -930,14 +930,14 @@ async function loadResultStats() {
 
 function applyTheme(theme) {
   const body = document.body;
-  const themeToggle = document.getElementById("themeToggle");
+  const toggleBtn = document.getElementById("themeToggle");
 
   if (theme === "light") {
     body.classList.add("light-mode");
-    if (themeToggle) themeToggle.textContent = "Dark Mode";
+    if (toggleBtn) toggleBtn.textContent = "🌙 Dark Mode";
   } else {
     body.classList.remove("light-mode");
-    if (themeToggle) themeToggle.textContent = "Light Mode";
+    if (toggleBtn) toggleBtn.textContent = "☀️ Light Mode";
   }
 
   localStorage.setItem("theme", theme);
