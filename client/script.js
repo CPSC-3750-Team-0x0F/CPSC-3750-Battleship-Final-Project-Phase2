@@ -927,3 +927,28 @@ async function loadResultStats() {
     console.error("Stats load failed:", err);
   }
 }
+
+function applyTheme(theme) {
+  const body = document.body;
+  const themeToggle = document.getElementById("themeToggle");
+
+  if (theme === "light") {
+    body.classList.add("light-mode");
+    if (themeToggle) themeToggle.textContent = "Dark Mode";
+  } else {
+    body.classList.remove("light-mode");
+    if (themeToggle) themeToggle.textContent = "Light Mode";
+  }
+
+  localStorage.setItem("theme", theme);
+}
+
+function toggleTheme() {
+  const isLight = document.body.classList.contains("light-mode");
+  applyTheme(isLight ? "dark" : "light");
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  const savedTheme = localStorage.getItem("theme") || "dark";
+  applyTheme(savedTheme);
+});

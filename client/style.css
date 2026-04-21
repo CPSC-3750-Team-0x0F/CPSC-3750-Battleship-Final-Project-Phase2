@@ -31,6 +31,35 @@ html {
   min-height: 100%;
 }
 
+body.light-mode {
+  --bg-dark: #eef4fb;
+  --bg-mid: #dde8f5;
+  --bg-light: #cfdced;
+
+  --panel: #ffffff;
+  --panel-strong: #f8fbff;
+
+  --border: rgba(12, 28, 45, 0.12);
+  --border-soft: rgba(12, 28, 45, 0.08);
+
+  --text-main: #102030;
+  --text-soft: #526579;
+  --text-muted: #2f4358;
+
+  --primary: #2f80ed;
+  --primary-hover: #1f6fd8;
+
+  --secondary: #d9e6f2;
+  --secondary-hover: #c8d9ea;
+
+  --success: #1fa35b;
+  --danger: #d64545;
+  --warning: #f4c542;
+
+  --shadow-lg: 0 16px 36px rgba(20, 40, 70, 0.12);
+  --shadow-md: 0 10px 22px rgba(20, 40, 70, 0.10);
+}
+
 body {
   margin: 0;
   font-family: Arial, sans-serif;
@@ -960,4 +989,147 @@ button:active {
   color: rgba(255, 255, 255, 0.35);
   font-weight: 400;
   letter-spacing: 0.03em;
+}
+
+body.light-mode {
+  background: linear-gradient(
+    180deg,
+    var(--bg-dark) 0%,
+    var(--bg-mid) 58%,
+    var(--bg-light) 100%
+  );
+}
+
+body.light-mode::before {
+  background:
+    linear-gradient(rgba(16, 32, 48, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(16, 32, 48, 0.04) 1px, transparent 1px);
+  opacity: 0.2;
+}
+
+body.light-mode::after {
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(47, 128, 237, 0.03) 35%,
+    rgba(47, 128, 237, 0.06) 48%,
+    rgba(47, 128, 237, 0.1) 50%,
+    rgba(47, 128, 237, 0.06) 52%,
+    rgba(47, 128, 237, 0.03) 65%,
+    transparent 100%
+  );
+}
+
+body.light-mode .card,
+body.light-mode .board-panel,
+body.light-mode .modal-card,
+body.light-mode .server-panel,
+body.light-mode .history-panel {
+  background: rgba(255, 255, 255, 0.94);
+  color: var(--text-main);
+}
+
+body.light-mode .card::before,
+body.light-mode .board-panel::before,
+body.light-mode .modal-card::before,
+body.light-mode .server-panel::before,
+body.light-mode .history-panel::before {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.55) 0%,
+    rgba(255, 255, 255, 0) 30%
+  );
+}
+
+body.light-mode input,
+body.light-mode select {
+  background: rgba(16, 32, 48, 0.04);
+  color: var(--text-main);
+  border: 1px solid var(--border);
+}
+
+body.light-mode input::placeholder {
+  color: #6c7c8d;
+}
+
+body.light-mode input:focus,
+body.light-mode select:focus {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: rgba(47, 128, 237, 0.55);
+  box-shadow: 0 0 0 3px rgba(47, 128, 237, 0.12);
+}
+
+body.light-mode .turn-badge {
+  background: rgba(16, 32, 48, 0.05);
+  border: 1px solid var(--border);
+  color: var(--text-soft);
+}
+
+body.light-mode .turn-badge.active {
+  color: #1b2430;
+}
+
+body.light-mode .cell {
+  background: #dbe8f4;
+  border: 1px solid rgba(16, 32, 48, 0.08);
+}
+
+body.light-mode .cell.placeable:hover,
+body.light-mode .cell.targetable:hover {
+  background: #c7dbef;
+  border-color: rgba(47, 128, 237, 0.85);
+}
+
+body.light-mode .cell.ship {
+  background: #8d9ba8;
+  border-color: rgba(16, 32, 48, 0.15);
+}
+
+body.light-mode .cell.pending-ship {
+  background: #b8c7d4;
+}
+
+body.light-mode .move-history-item,
+body.light-mode .game-list-item,
+body.light-mode .result-stat-card {
+  background: rgba(16, 32, 48, 0.04);
+  border: 1px solid rgba(16, 32, 48, 0.08);
+}
+
+body.light-mode .game-list-item:hover {
+  background: rgba(16, 32, 48, 0.06);
+  border-color: rgba(47, 128, 237, 0.4);
+}
+
+body.light-mode .modal {
+  background: rgba(180, 195, 210, 0.55);
+}
+
+body.light-mode .result-overlay {
+  background: rgba(210, 220, 232, 0.82);
+}
+
+body.light-mode .result-content {
+  background: rgba(255, 255, 255, 0.97);
+  border: 1px solid var(--border);
+  box-shadow: 0 24px 60px rgba(20, 40, 70, 0.16);
+}
+
+body.light-mode .result-subtitle,
+body.light-mode .result-stat-label,
+body.light-mode .board-help,
+body.light-mode .subtitle,
+body.light-mode .status-text,
+body.light-mode .move-history-meta,
+body.light-mode .server-status,
+body.light-mode .server-current {
+  color: var(--text-soft);
+}
+
+body.light-mode .subtitle::after {
+  background: rgba(16, 32, 48, 0.12);
+}
+
+body.light-mode .move-timestamp {
+  color: rgba(16, 32, 48, 0.4);
 }
