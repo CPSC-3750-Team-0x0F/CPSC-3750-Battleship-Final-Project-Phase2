@@ -934,10 +934,10 @@ function applyTheme(theme) {
 
   if (theme === "light") {
     body.classList.add("light-mode");
-    if (toggleBtn) toggleBtn.textContent = "🌙 Dark Mode";
+    if (toggleBtn) toggleBtn.textContent = "Dark Mode";
   } else {
     body.classList.remove("light-mode");
-    if (toggleBtn) toggleBtn.textContent = "☀️ Light Mode";
+    if (toggleBtn) toggleBtn.textContent = "Light Mode";
   }
 
   localStorage.setItem("theme", theme);
