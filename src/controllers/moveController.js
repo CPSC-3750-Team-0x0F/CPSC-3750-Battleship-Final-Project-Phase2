@@ -8,16 +8,14 @@ exports.placeShips = async (req, res) => {
   const { id } = req.params;
   const { player_id, ships } = req.body || {};
 
-  // 1. Basic Type Validation
   if (!isStrictInt(id) || !isStrictInt(player_id) || !Array.isArray(ships)) {
     return res.status(400).json({ error: "bad_request", message: "invalid request" });
   }
 
-  // FIX [REF0043]: Check ship count BEFORE database checks. 
   if (ships.length !== 3) {
-    return res.status(400).json({ 
-      error: "bad_request", 
-      message: "You must place exactly 3 ships" 
+    return res.status(400).json({
+      error: "bad_request",
+      message: "You must place exactly 3 ships"
     });
   }
 
@@ -40,7 +38,6 @@ exports.placeShips = async (req, res) => {
 
     const { grid_size, status } = gameResult.rows[0];
 
-    // FIX [REF0050]: Check membership BEFORE allowing ship placement
     const membershipRes = await client.query(
       "SELECT 1 FROM game_players WHERE game_id = $1 AND player_id = $2",
       [gameId, playerId]
@@ -51,24 +48,24 @@ exports.placeShips = async (req, res) => {
       return res.status(403).json({ error: "forbidden", message: "player not in game" });
     }
 
-    // FIX: Guard against placing ships in a game that has already started or finished
-    if (status !== 'waiting_setup') {
+    if (status !== "waiting_setup") {
       await client.query("ROLLBACK");
-      return res.status(400).json({ error: "bad_request", message: "cannot place ships in current game state" });
+      return res.status(400).json({
+        error: "bad_request",
+        message: "cannot place ships in current game state"
+      });
     }
 
-    // T0123 Fix: Bounds checking
     for (const ship of ships) {
       if (ship.row < 0 || ship.row >= grid_size || ship.col < 0 || ship.col >= grid_size) {
         await client.query("ROLLBACK");
         return res.status(400).json({
           error: "bad_request",
-          message: "Invalid ship coordinates" 
+          message: "Invalid ship coordinates"
         });
       }
     }
 
-    // T0039 Fix: Check if player already placed ships
     const existingShips = await client.query(
       "SELECT 1 FROM ships WHERE game_id = $1 AND player_id = $2 LIMIT 1",
       [gameId, playerId]
@@ -82,7 +79,6 @@ exports.placeShips = async (req, res) => {
       });
     }
 
-    // T0136 Fix: Insert ships
     for (const ship of ships) {
       await client.query(
         "INSERT INTO ships (game_id, player_id, row, col) VALUES ($1, $2, $3, $4)",
@@ -90,20 +86,27 @@ exports.placeShips = async (req, res) => {
       );
     }
 
-    // Check if all players have placed ships to update game status
-    const playersCountRes = await client.query("SELECT COUNT(*)::int FROM game_players WHERE game_id = $1", [gameId]);
-    const readyCountRes = await client.query("SELECT COUNT(DISTINCT player_id)::int FROM ships WHERE game_id = $1", [gameId]);
+    const playersCountRes = await client.query(
+      "SELECT COUNT(*)::int FROM game_players WHERE game_id = $1",
+      [gameId]
+    );
+    const readyCountRes = await client.query(
+      "SELECT COUNT(DISTINCT player_id)::int FROM ships WHERE game_id = $1",
+      [gameId]
+    );
 
     const playersCount = playersCountRes.rows[0].count;
     const readyCount = readyCountRes.rows[0].count;
 
     if (playersCount === readyCount && playersCount >= 2) {
-      await client.query("UPDATE games SET status = 'playing' WHERE game_id = $1", [gameId]);
+      await client.query(
+        "UPDATE games SET status = 'playing' WHERE game_id = $1",
+        [gameId]
+      );
     }
 
     await client.query("COMMIT");
     return res.status(200).json({ status: "placed" });
-
   } catch (err) {
     await client.query("ROLLBACK");
     console.error("placeShips error:", err);
@@ -198,7 +201,6 @@ exports.fireShot = async (req, res) => {
       return res.status(409).json({ error: "conflict", message: "already fired here" });
     }
 
-    // Find whether this shot hit an opponent ship
     const hitRes = await client.query(
       `
       SELECT player_id
@@ -243,7 +245,7 @@ exports.fireShot = async (req, res) => {
 
     const alivePlayers = [];
 
-      for (const p of players) {
+    for (const p of players) {
       const remainingShipsRes = await client.query(
         `
         SELECT COUNT(*)::int AS count
@@ -277,9 +279,6 @@ exports.fireShot = async (req, res) => {
         [winnerId, gameId]
       );
 
-      // PERSISTENT ACCOUNT UPDATE:
-      // We only update Wins/Losses here. 
-      // games_played was already incremented in gameController when the match started.
       await client.query(
         "UPDATE players SET wins = wins + 1 WHERE player_id = $1",
         [winnerId]
@@ -297,8 +296,7 @@ exports.fireShot = async (req, res) => {
         `,
         [gameId, winnerId]
       );
-    }
-	else {
+    } else {
       const currentIdx = players.findIndex((p) => p.turn_order === currentTurnIndex);
       const nextIdx = (currentIdx + 1) % players.length;
       const nextTurnIndex = players[nextIdx].turn_order;
@@ -347,15 +345,128 @@ exports.getMoves = async (req, res) => {
       [Number(id)]
     );
 
-    return res.status(200).json(result.rows.map(row => ({
-      player_id: Number(row.player_id),
-      row: Number(row.row),
-      col: Number(row.col),
-      result: row.result,
-      move_timestamp: row.move_timestamp
-    })));
+    return res.status(200).json(
+      result.rows.map((row) => ({
+        player_id: Number(row.player_id),
+        row: Number(row.row),
+        col: Number(row.col),
+        result: row.result,
+        move_timestamp: row.move_timestamp
+      }))
+    );
   } catch (err) {
     console.error("getMoves error:", err);
     return res.status(500).json({ error: "server_error", message: "database error" });
+  }
+};
+
+/**
+ * GET /api/games/:id/stats/:playerId
+ * Returns current-game stats for one player in one game.
+ */
+exports.getCurrentGameStats = async (req, res) => {
+  const { id, playerId } = req.params;
+
+  if (!isStrictInt(id) || !isStrictInt(playerId)) {
+    return res.status(400).json({
+      error: "bad_request",
+      message: "invalid numeric input"
+    });
+  }
+
+  const gameId = Number(id);
+  const player_id = Number(playerId);
+
+  try {
+    const membershipRes = await db.query(
+      "SELECT 1 FROM game_players WHERE game_id = $1 AND player_id = $2",
+      [gameId, player_id]
+    );
+
+    if (membershipRes.rows.length === 0) {
+      return res.status(404).json({
+        error: "not_found",
+        message: "player not in game"
+      });
+    }
+
+    const playerRes = await db.query(
+      "SELECT username FROM players WHERE player_id = $1",
+      [player_id]
+    );
+
+    if (playerRes.rows.length === 0) {
+      return res.status(404).json({
+        error: "not_found",
+        message: "player not found"
+      });
+    }
+
+    const shotsRes = await db.query(
+      `
+      SELECT
+        COUNT(*)::int AS shots_fired,
+        COUNT(*) FILTER (WHERE result = 'hit')::int AS hits,
+        COUNT(*) FILTER (WHERE result = 'miss')::int AS misses
+      FROM moves
+      WHERE game_id = $1 AND player_id = $2
+      `,
+      [gameId, player_id]
+    );
+
+    const shotsFired = Number(shotsRes.rows[0].shots_fired || 0);
+    const hits = Number(shotsRes.rows[0].hits || 0);
+    const misses = Number(shotsRes.rows[0].misses || 0);
+    const accuracy =
+      shotsFired > 0 ? Number(((hits / shotsFired) * 100).toFixed(2)) : 0.0;
+
+    const totalShipTilesRes = await db.query(
+      `
+      SELECT COUNT(*)::int AS count
+      FROM ships
+      WHERE game_id = $1 AND player_id = $2
+      `,
+      [gameId, player_id]
+    );
+
+    const hitShipTilesRes = await db.query(
+      `
+      SELECT COUNT(*)::int AS count
+      FROM ships s
+      WHERE s.game_id = $1
+        AND s.player_id = $2
+        AND EXISTS (
+          SELECT 1
+          FROM moves m
+          WHERE m.game_id = s.game_id
+            AND m.row = s.row
+            AND m.col = s.col
+            AND m.result = 'hit'
+            AND m.player_id != s.player_id
+        )
+      `,
+      [gameId, player_id]
+    );
+
+    const totalShipTiles = Number(totalShipTilesRes.rows[0].count || 0);
+    const hitShipTiles = Number(hitShipTilesRes.rows[0].count || 0);
+    const ships_remaining = Math.max(0, totalShipTiles - hitShipTiles);
+
+    return res.status(200).json({
+      game_id: gameId,
+      player_id,
+      username: playerRes.rows[0].username,
+      shots_fired: shotsFired,
+      hits,
+      misses,
+      accuracy,
+      ships_remaining
+    });
+  } catch (err) {
+    console.error("getCurrentGameStats error:", err);
+    return res.status(500).json({
+      error: "server_error",
+      message: "database error"
+    });
   }
 };

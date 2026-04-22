@@ -132,38 +132,142 @@ function renderMoveHistory(moves = []) {
 
   const sortedMoves = [...moves].reverse();
 
-container.innerHTML = sortedMoves
-  .map((move, index) => {
-    const row = Number(move.row);
-    const col = Number(move.col);
-    const result = String(move.result || (move.hit ? "hit" : "miss")).toLowerCase();
-    const isYou = Number(move.player_id) === Number(currentPlayerId);
-    const playerLabel = isYou ? "You" : "Opponent";
+  container.innerHTML = sortedMoves
+    .map((move, index) => {
+      const row = Number(move.row);
+      const col = Number(move.col);
+      const result = String(move.result || (move.hit ? "hit" : "miss")).toLowerCase();
+      const isYou = Number(move.player_id) === Number(currentPlayerId);
+      const playerLabel = isYou ? "You" : "Opponent";
 
-    const timestampValue =
-      move.timestamp || move.created_at || move.move_time || move.move_timestamp;
-    const formattedTimestamp = formatMoveTimestamp(timestampValue);
+      const timestampValue =
+        move.timestamp || move.created_at || move.move_time || move.move_timestamp;
+      const formattedTimestamp = formatMoveTimestamp(timestampValue);
 
-    return `
-      <div class="move-history-item">
-        <div class="move-history-main">
-          <div class="move-history-shot">
-            ${playerLabel} fired at (${row}, ${col})
+      return `
+        <div class="move-history-item">
+          <div class="move-history-main">
+            <div class="move-history-shot">
+              ${playerLabel} fired at (${row}, ${col})
+            </div>
+
+            <div class="move-history-meta">
+              Move #${sortedMoves.length - index}
+              ${formattedTimestamp ? ` <span class="move-timestamp">${formattedTimestamp}</span>` : ""}
+            </div>
           </div>
 
-          <div class="move-history-meta">
-            Move #${sortedMoves.length - index}
-            ${formattedTimestamp ? ` <span class="move-timestamp">${formattedTimestamp}</span>` : ""}
+          <div class="move-result ${result}">
+            ${result.toUpperCase()}
           </div>
         </div>
+      `;
+    })
+    .join("");
+}
 
-        <div class="move-result ${result}">
-          ${result.toUpperCase()}
-        </div>
-      </div>
-    `;
-  })
-  .join("");
+/* ---------------- STATS HELPERS ---------------- */
+
+function renderCareerStats(stats) {
+  const card = document.getElementById("careerStatsCard");
+  if (!card) return;
+
+  const usernameEl = document.getElementById("careerUsername");
+  const gamesEl = document.getElementById("careerGames");
+  const winsEl = document.getElementById("careerWins");
+  const lossesEl = document.getElementById("careerLosses");
+  const shotsEl = document.getElementById("careerShots");
+  const hitsEl = document.getElementById("careerHits");
+  const accuracyEl = document.getElementById("careerAccuracy");
+
+  if (usernameEl) usernameEl.textContent = stats.username ?? currentUsername ?? "Player";
+  if (gamesEl) gamesEl.textContent = Number(stats.games_played || 0);
+  if (winsEl) winsEl.textContent = Number(stats.wins || 0);
+  if (lossesEl) lossesEl.textContent = Number(stats.losses || 0);
+  if (shotsEl) shotsEl.textContent = Number(stats.total_shots || 0);
+  if (hitsEl) hitsEl.textContent = Number(stats.total_hits || 0);
+  if (accuracyEl) accuracyEl.textContent = `${Number(stats.accuracy || 0).toFixed(2)}%`;
+
+  card.classList.remove("hidden");
+}
+
+function hideCareerStats() {
+  const card = document.getElementById("careerStatsCard");
+  if (card) card.classList.add("hidden");
+}
+
+function renderLiveGameStats(stats) {
+  const card = document.getElementById("liveGameStatsCard");
+  if (!card) return;
+
+  const shotsEl = document.getElementById("liveShots");
+  const hitsEl = document.getElementById("liveHits");
+  const missesEl = document.getElementById("liveMisses");
+  const accuracyEl = document.getElementById("liveAccuracy");
+  const shipsEl = document.getElementById("liveShipsRemaining");
+
+  if (shotsEl) shotsEl.textContent = Number(stats.shots_fired || 0);
+  if (hitsEl) hitsEl.textContent = Number(stats.hits || 0);
+  if (missesEl) missesEl.textContent = Number(stats.misses || 0);
+  if (accuracyEl) accuracyEl.textContent = `${Number(stats.accuracy || 0).toFixed(2)}%`;
+  if (shipsEl) shipsEl.textContent = Number(stats.ships_remaining || 0);
+
+  card.classList.remove("hidden");
+}
+
+function clearLiveGameStats() {
+  const card = document.getElementById("liveGameStatsCard");
+  if (card) card.classList.add("hidden");
+
+  const shotsEl = document.getElementById("liveShots");
+  const hitsEl = document.getElementById("liveHits");
+  const missesEl = document.getElementById("liveMisses");
+  const accuracyEl = document.getElementById("liveAccuracy");
+  const shipsEl = document.getElementById("liveShipsRemaining");
+
+  if (shotsEl) shotsEl.textContent = "0";
+  if (hitsEl) hitsEl.textContent = "0";
+  if (missesEl) missesEl.textContent = "0";
+  if (accuracyEl) accuracyEl.textContent = "0.00%";
+  if (shipsEl) shipsEl.textContent = "0";
+}
+
+async function loadCareerStats() {
+  if (!currentPlayerId || !SERVER_BASE) return null;
+
+  try {
+    const res = await fetch(`${getApiBase()}/players/${currentPlayerId}/stats`);
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data.message || data.error || "Failed to load career stats");
+    }
+
+    renderCareerStats(data);
+    return data;
+  } catch (err) {
+    console.error("loadCareerStats error:", err);
+    return null;
+  }
+}
+
+async function loadLiveGameStats() {
+  if (!currentPlayerId || !currentGameId || !SERVER_BASE) return null;
+
+  try {
+    const res = await fetch(`${getApiBase()}/games/${currentGameId}/stats/${currentPlayerId}`);
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data.message || data.error || "Failed to load current game stats");
+    }
+
+    renderLiveGameStats(data);
+    return data;
+  } catch (err) {
+    console.error("loadLiveGameStats error:", err);
+    return null;
+  }
 }
 
 async function connectToServer() {
@@ -182,13 +286,11 @@ async function connectToServer() {
   const cleaned = input.replace(/\/+$/, "");
 
   try {
-    // 1. Test Connection
     const testRes = await fetch(`${cleaned}/api`);
     if (!testRes.ok) throw new Error("Server unreachable");
 
     SERVER_BASE = cleaned;
-    
-    // 2. Register/Login Player
+
     const regRes = await fetch(`${cleaned}/api/players`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -197,13 +299,12 @@ async function connectToServer() {
 
     const data = await regRes.json();
     if (regRes.ok) {
-      currentPlayerId = data.player_id;
-      currentUsername = usernameInput;
+      currentPlayerId = Number(data.player_id);
+      currentUsername = data.username || usernameInput;
 
-      // Show the header in the UI
       showAccountHeader(currentUsername);
+      await loadCareerStats();
 
-      // Save to storage
       localStorage.setItem("battleship_server_url", SERVER_BASE);
       localStorage.setItem(STORAGE_KEYS.username, currentUsername);
       localStorage.setItem(STORAGE_KEYS.playerId, currentPlayerId);
@@ -234,10 +335,9 @@ function clearGameSessionStorage() {
 function resetClientServer() {
   stopPolling();
   closeLobbyModal();
-  
-  // Add it here to ensure the overlay is hidden during a full reset
-  const overlay = document.getElementById('gameResultOverlay');
-  if (overlay) overlay.classList.add('hidden');
+
+  const overlay = document.getElementById("gameResultOverlay");
+  if (overlay) overlay.classList.add("hidden");
 
   currentPlayerId = null;
   currentGameId = null;
@@ -271,6 +371,9 @@ function resetClientServer() {
     historyList.innerHTML = `<p class="empty-history">No moves yet.</p>`;
   }
 
+  clearLiveGameStats();
+  hideCareerStats();
+
   showLanding();
 }
 
@@ -297,8 +400,8 @@ function showGame() {
 function goHome() {
   stopPolling();
   closeLobbyModal();
-  // Hide the result overlay so it's gone for the next game
-  document.getElementById('gameResultOverlay').classList.add('hidden');
+  document.getElementById("gameResultOverlay").classList.add("hidden");
+  clearLiveGameStats();
   showLanding();
 }
 
@@ -411,7 +514,7 @@ async function createPlayer(username) {
     throw new Error(data.message || data.error || "Failed to create player");
   }
 
-  return data.player_id;
+  return data;
 }
 
 async function createGameFromModal() {
@@ -428,7 +531,9 @@ async function createGameFromModal() {
 
   try {
     currentUsername = username;
-    currentPlayerId = await createPlayer(username);
+    const playerData = await createPlayer(username);
+    currentPlayerId = Number(playerData.player_id);
+    currentUsername = playerData.username || username;
     currentTurnOrder = 0;
     currentGridSize = gridSize;
 
@@ -450,6 +555,10 @@ async function createGameFromModal() {
 
     currentGameId = game.game_id;
     saveSession();
+    showAccountHeader(currentUsername);
+    await loadCareerStats();
+    await loadLiveGameStats();
+
     closeCreateGameModal();
     setStatus(`Game created! ID: ${currentGameId}`);
 
@@ -475,7 +584,9 @@ async function joinGame() {
 
   try {
     currentUsername = username;
-    currentPlayerId = await createPlayer(username);
+    const playerData = await createPlayer(username);
+    currentPlayerId = Number(playerData.player_id);
+    currentUsername = playerData.username || username;
 
     const joinRes = await fetch(`${getApiBase()}/games/${gameId}/join`, {
       method: "POST",
@@ -494,6 +605,10 @@ async function joinGame() {
     currentGameId = Number(gameId);
     currentTurnOrder = Number(joinData.turn_order ?? 1);
     saveSession();
+    showAccountHeader(currentUsername);
+    await loadCareerStats();
+    await loadLiveGameStats();
+
     setStatus(`Joined game ${gameId}`);
 
     openLobbyModal();
@@ -606,11 +721,17 @@ async function refreshGameState(silent = false) {
     renderBoards();
     renderMoveHistory(currentGameData.moves);
 
-    // --- PART 1: Win/Loss Detection ---
-    if (currentGameData && currentGameData.status === 'finished') {
-      showGameResult(currentGameData.winner_id);
+    await loadCareerStats();
+
+    if (currentGameData.status === "playing" || currentGameData.status === "finished") {
+      await loadLiveGameStats();
+    } else {
+      clearLiveGameStats();
     }
 
+    if (currentGameData && currentGameData.status === "finished") {
+      showGameResult(currentGameData.winner_id);
+    }
   } catch (err) {
     if (!silent) {
       const statusEl = document.getElementById("gameStatusOnly");
@@ -850,13 +971,15 @@ function renderBoards() {
   }
 }
 
-window.addEventListener("load", () => {
+window.addEventListener("load", async () => {
   loadSession();
 
   if (SERVER_BASE) {
     document.getElementById("serverUrl").value = SERVER_BASE;
     updateServerDisplay();
     setServerStatus("Previously connected server loaded.", "success");
+    showAccountHeader(currentUsername);
+    await loadCareerStats();
     loadAvailableGames();
   } else {
     updateServerDisplay();
@@ -880,6 +1003,7 @@ window.addEventListener("load", () => {
       localStorage.removeItem(STORAGE_KEYS.gameId);
       localStorage.removeItem(STORAGE_KEYS.turnOrder);
 
+      clearLiveGameStats();
       showLanding();
       loadAvailableGames();
     });
@@ -931,7 +1055,7 @@ async function loadResultStats() {
     const hits = Number(data.total_hits || 0);
     const shots = Number(data.total_shots || 0);
     const misses = Math.max(0, shots - hits);
-    const accuracy = shots > 0 ? Math.round((hits / shots) * 100) : 0;
+    const accuracy = Number(data.accuracy || 0);
 
     const accuracyEl = document.getElementById("resultAccuracy");
     const hitsEl = document.getElementById("resultHits");
@@ -939,9 +1063,9 @@ async function loadResultStats() {
     const statsBox = document.getElementById("resultStats");
 
     resetResultStatsDisplay();
-    statsBox.classList.remove("hidden");
+    if (statsBox) statsBox.classList.remove("hidden");
 
-    animateNumber(accuracyEl, accuracy, "%", 1000);
+    animateNumber(accuracyEl, Math.round(accuracy), "%", 1000);
     animateNumber(hitsEl, hits, "", 900);
     animateNumber(missesEl, misses, "", 900);
   } catch (err) {
@@ -969,17 +1093,17 @@ function toggleTheme() {
   applyTheme(isLight ? "dark" : "light");
 }
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
   const savedTheme = localStorage.getItem("theme") || "dark";
   applyTheme(savedTheme);
 
-  // Add these lines here:
   const savedUser = localStorage.getItem(STORAGE_KEYS.username);
   if (savedUser && SERVER_BASE) {
     currentUsername = savedUser;
-    currentPlayerId = localStorage.getItem(STORAGE_KEYS.playerId);
+    currentPlayerId = Number(localStorage.getItem(STORAGE_KEYS.playerId));
     showAccountHeader(currentUsername);
     updateServerDisplay();
+    await loadCareerStats();
     loadAvailableGames();
   }
 });
@@ -987,7 +1111,7 @@ document.addEventListener("DOMContentLoaded", () => {
 function showAccountHeader(username) {
   const profileDiv = document.getElementById("userProfile");
   const nameSpan = document.getElementById("displayUsername");
-  
+
   if (profileDiv && nameSpan) {
     nameSpan.textContent = username;
     profileDiv.classList.remove("hidden");

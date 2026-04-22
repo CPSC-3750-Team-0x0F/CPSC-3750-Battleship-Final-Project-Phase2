@@ -9,24 +9,26 @@
 </head>
 <body>
   <button id="themeToggle" class="theme-toggle" onclick="toggleTheme()">
-  Light Mode
+    Light Mode
   </button>
+
   <div id="userProfile" class="user-profile hidden">
-  <img src="avatar.png" alt="User Avatar" class="avatar-circle">
-  <span id="displayUsername" class="username-text"></span>
+    <img src="avatar.png" alt="User Avatar" class="avatar-circle">
+    <span id="displayUsername" class="username-text"></span>
   </div>
+
   <div class="container">
-	<div class="server-panel">
-    	<input id="serverUrl" type="text" placeholder="Enter server URL" />
-    	<button onclick="connectToServer()">Connect</button>
-    	<button class="secondary-btn" onclick="resetClientServer()">Change</button>
-    	<div id="serverConnectionStatus" class="server-status">Not connected</div>
-    	<div id="currentServerDisplay" class="server-current">Server: None</div>
-  	</div>
+    <div class="server-panel">
+      <input id="serverUrl" type="text" placeholder="Enter server URL" />
+      <button onclick="connectToServer()">Connect</button>
+      <button class="secondary-btn" onclick="resetClientServer()">Change</button>
+      <div id="serverConnectionStatus" class="server-status">Not connected</div>
+      <div id="currentServerDisplay" class="server-current">Server: None</div>
+    </div>
 
     <section id="landingView">
-  	<img src="logo.png" alt="Ship Sinkers Logo" class="main-logo">
-  	<p class="subtitle">Create or join a game</p>
+      <img src="logo.png" alt="Ship Sinkers Logo" class="main-logo">
+      <p class="subtitle">Create or join a game</p>
 
       <div class="lobby-grid">
         <div class="card lobby-main-card">
@@ -52,6 +54,41 @@
         </div>
       </div>
 
+      <!-- NEW: Career stats -->
+      <div id="careerStatsCard" class="card hidden">
+        <h2>Career Stats</h2>
+        <div class="stats-grid">
+          <div class="stat-item">
+            <span class="stat-label">Player</span>
+            <span id="careerUsername" class="stat-value">-</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Games Played</span>
+            <span id="careerGames" class="stat-value">0</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Wins</span>
+            <span id="careerWins" class="stat-value">0</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Losses</span>
+            <span id="careerLosses" class="stat-value">0</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Total Shots</span>
+            <span id="careerShots" class="stat-value">0</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Total Hits</span>
+            <span id="careerHits" class="stat-value">0</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Accuracy</span>
+            <span id="careerAccuracy" class="stat-value">0.00%</span>
+          </div>
+        </div>
+      </div>
+
       <div id="status" class="status-text"></div>
     </section>
 
@@ -67,6 +104,33 @@
       <div class="turn-strip">
         <div id="youTurnBadge" class="turn-badge">You</div>
         <div id="opponentTurnBadge" class="turn-badge">Opponent</div>
+      </div>
+
+      <!-- NEW: Live game stats -->
+      <div id="liveGameStatsCard" class="card hidden">
+        <h2>Current Game Stats</h2>
+        <div class="stats-grid">
+          <div class="stat-item">
+            <span class="stat-label">Shots Fired</span>
+            <span id="liveShots" class="stat-value">0</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Hits</span>
+            <span id="liveHits" class="stat-value">0</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Misses</span>
+            <span id="liveMisses" class="stat-value">0</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Accuracy</span>
+            <span id="liveAccuracy" class="stat-value">0.00%</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Ship Tiles Left</span>
+            <span id="liveShipsRemaining" class="stat-value">0</span>
+          </div>
+        </div>
       </div>
 
       <div class="boards">
@@ -169,7 +233,7 @@
         <p class="result-subtitle">Your fleet has been sunk</p>
       </div>
 
-    <div id="resultStats" class="result-stats hidden">
+      <div id="resultStats" class="result-stats hidden">
         <div class="result-stat-card">
           <span class="result-stat-label">Accuracy</span>
           <span id="resultAccuracy" class="result-stat-value">0%</span>
