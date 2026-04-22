@@ -695,22 +695,23 @@ button:active {
 }
 
 .lobby-grid {
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(280px, 1fr));
   gap: 24px;
-  flex-wrap: wrap;
+  align-items: start;
+  width: 100%;
+  max-width: 1240px;
 }
 
-.lobby-main-card {
-  width: 360px;
+.lobby-main-card,
+.available-games-card,
+#careerStatsCard {
+  width: 100%;
+  max-width: none;
   margin: 0;
 }
 
 .available-games-card {
-  width: 420px;
-  max-width: calc(100vw - 40px);
-  margin: 0;
   text-align: left;
 }
 
@@ -810,12 +811,13 @@ button:active {
   }
 
   .lobby-grid {
-    flex-direction: column;
-    align-items: center;
+    grid-template-columns: 1fr;
+    justify-items: center;
   }
 
   .lobby-main-card,
-  .available-games-card {
+  .available-games-card,
+  #careerStatsCard {
     width: 100%;
     max-width: 420px;
   }
@@ -823,6 +825,20 @@ button:active {
   .history-header {
     flex-direction: column;
     align-items: flex-start;
+  }
+}
+
+@media (max-width: 1100px) {
+  .lobby-grid {
+    grid-template-columns: 1fr;
+    justify-items: center;
+  }
+
+  .lobby-main-card,
+  .available-games-card,
+  #careerStatsCard {
+    width: 100%;
+    max-width: 420px;
   }
 }
 
@@ -1234,8 +1250,8 @@ body.light-mode .move-timestamp {
 
 #careerStatsCard {
   width: 100%;
-  max-width: 1000px;
-  margin-top: 24px;
+  max-width: none;
+  margin-top: 0;
 }
 
 body.light-mode .stat-item {
