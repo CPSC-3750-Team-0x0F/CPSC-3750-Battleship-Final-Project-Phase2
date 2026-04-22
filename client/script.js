@@ -1044,17 +1044,18 @@ function resetResultStatsDisplay() {
 }
 
 async function loadResultStats() {
-  if (!currentPlayerId || !SERVER_BASE) return;
+  if (!currentPlayerId || !currentGameId || !SERVER_BASE) return;
 
   try {
-    const res = await fetch(`${getApiBase()}/players/${currentPlayerId}/stats`);
+    const res = await fetch(
+      `${getApiBase()}/games/${currentGameId}/stats/${currentPlayerId}`
+    );
     const data = await res.json();
 
-    if (!res.ok) throw new Error(data.message || "Failed to load stats");
+    if (!res.ok) throw new Error(data.message || "Failed to load game stats");
 
-    const hits = Number(data.total_hits || 0);
-    const shots = Number(data.total_shots || 0);
-    const misses = Math.max(0, shots - hits);
+    const hits = Number(data.hits || 0);
+    const misses = Number(data.misses || 0);
     const accuracy = Number(data.accuracy || 0);
 
     const accuracyEl = document.getElementById("resultAccuracy");
@@ -1069,7 +1070,7 @@ async function loadResultStats() {
     animateNumber(hitsEl, hits, "", 900);
     animateNumber(missesEl, misses, "", 900);
   } catch (err) {
-    console.error("Stats load failed:", err);
+    console.error("Game result stats load failed:", err);
   }
 }
 
