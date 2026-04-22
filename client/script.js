@@ -168,33 +168,54 @@ container.innerHTML = sortedMoves
 
 async function connectToServer() {
   const input = document.getElementById("serverUrl").value.trim();
+  const usernameInput = document.getElementById("username").value.trim();
 
   if (!input) {
     setServerStatus("Please enter a server URL.", "error");
-    setStatus("Enter a server URL first.");
+    return;
+  }
+  if (!usernameInput) {
+    setServerStatus("Please enter a username first.", "error");
     return;
   }
 
   const cleaned = input.replace(/\/+$/, "");
 
   try {
-    const response = await fetch(`${cleaned}/api`, {
-      method: "GET"
-    });
-
-    if (!response.ok) {
-      throw new Error(`Server responded with ${response.status}`);
-    }
+    // 1. Test Connection
+    const testRes = await fetch(`${cleaned}/api`);
+    if (!testRes.ok) throw new Error("Server unreachable");
 
     SERVER_BASE = cleaned;
-    localStorage.setItem("battleship_server_url", SERVER_BASE);
-    updateServerDisplay();
-    setServerStatus("Connection successful.", "success");
-    setStatus("Connected to server successfully.");
-    loadAvailableGames();
+    
+    // 2. Register/Login Player
+    const regRes = await fetch(`${cleaned}/api/players`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: usernameInput })
+    });
+
+    const data = await regRes.json();
+    if (regRes.ok) {
+      currentPlayerId = data.player_id;
+      currentUsername = usernameInput;
+
+      // Show the header in the UI
+      showAccountHeader(currentUsername);
+
+      // Save to storage
+      localStorage.setItem("battleship_server_url", SERVER_BASE);
+      localStorage.setItem(STORAGE_KEYS.username, currentUsername);
+      localStorage.setItem(STORAGE_KEYS.playerId, currentPlayerId);
+
+      updateServerDisplay();
+      setServerStatus("Connected as " + currentUsername, "success");
+      loadAvailableGames();
+    } else {
+      throw new Error(data.message || "Registration failed");
+    }
   } catch (err) {
-    setServerStatus("Connection failed.", "error");
-    setStatus(err.message || "Could not connect to that server.");
+    setServerStatus(err.message, "error");
   }
 }
 
@@ -951,4 +972,24 @@ function toggleTheme() {
 document.addEventListener("DOMContentLoaded", () => {
   const savedTheme = localStorage.getItem("theme") || "dark";
   applyTheme(savedTheme);
+
+  // Add these lines here:
+  const savedUser = localStorage.getItem(STORAGE_KEYS.username);
+  if (savedUser && SERVER_BASE) {
+    currentUsername = savedUser;
+    currentPlayerId = localStorage.getItem(STORAGE_KEYS.playerId);
+    showAccountHeader(currentUsername);
+    updateServerDisplay();
+    loadAvailableGames();
+  }
 });
+
+function showAccountHeader(username) {
+  const profileDiv = document.getElementById("userProfile");
+  const nameSpan = document.getElementById("displayUsername");
+  
+  if (profileDiv && nameSpan) {
+    nameSpan.textContent = username;
+    profileDiv.classList.remove("hidden");
+  }
+}
