@@ -17,15 +17,20 @@
     <span id="displayUsername" class="username-text"></span>
   </div>
 
-  <div class="container">
-    <div class="server-panel">
-      <input id="serverUrl" type="text" placeholder="Enter server URL" />
+  <!-- MOVED SERVER PANEL -->
+  <div class="floating-server-panel">
+    <input id="serverUrl" type="text" placeholder="Enter server URL" />
+
+    <div class="server-actions">
       <button onclick="connectToServer()">Connect</button>
       <button class="secondary-btn" onclick="resetClientServer()">Change</button>
-      <div id="serverConnectionStatus" class="server-status">Not connected</div>
-      <div id="currentServerDisplay" class="server-current">Server: None</div>
     </div>
 
+    <div id="serverConnectionStatus" class="server-status">Not connected</div>
+    <div id="currentServerDisplay" class="server-current">Server: None</div>
+  </div>
+
+  <div class="container">
     <section id="landingView">
       <img src="logo.png" alt="Ship Sinkers Logo" class="main-logo">
       <p class="subtitle">Create or join a game</p>
@@ -54,7 +59,6 @@
         </div>
       </div>
 
-      <!-- NEW: Career stats -->
       <div id="careerStatsCard" class="card hidden">
         <h2>Career Stats</h2>
         <div class="stats-grid">
@@ -106,30 +110,26 @@
         <div id="opponentTurnBadge" class="turn-badge">Opponent</div>
       </div>
 
-      <!-- NEW: Live game stats -->
-      <div id="liveGameStatsCard" class="card hidden">
-        <h2>Current Game Stats</h2>
-        <div class="stats-grid">
-          <div class="stat-item">
-            <span class="stat-label">Shots Fired</span>
-            <span id="liveShots" class="stat-value">0</span>
-          </div>
-          <div class="stat-item">
-            <span class="stat-label">Hits</span>
-            <span id="liveHits" class="stat-value">0</span>
-          </div>
-          <div class="stat-item">
-            <span class="stat-label">Misses</span>
-            <span id="liveMisses" class="stat-value">0</span>
-          </div>
-          <div class="stat-item">
-            <span class="stat-label">Accuracy</span>
-            <span id="liveAccuracy" class="stat-value">0.00%</span>
-          </div>
-          <div class="stat-item">
-            <span class="stat-label">Ship Tiles Left</span>
-            <span id="liveShipsRemaining" class="stat-value">0</span>
-          </div>
+      <div id="liveGameStatsCard" class="live-stats-strip hidden">
+        <div class="live-stat-pill">
+          <span class="live-stat-label">Shots</span>
+          <span id="liveShots" class="live-stat-value">0</span>
+        </div>
+        <div class="live-stat-pill">
+          <span class="live-stat-label">Hits</span>
+          <span id="liveHits" class="live-stat-value">0</span>
+        </div>
+        <div class="live-stat-pill">
+          <span class="live-stat-label">Misses</span>
+          <span id="liveMisses" class="live-stat-value">0</span>
+        </div>
+        <div class="live-stat-pill">
+          <span class="live-stat-label">Accuracy</span>
+          <span id="liveAccuracy" class="live-stat-value">0.00%</span>
+        </div>
+        <div class="live-stat-pill">
+          <span class="live-stat-label">Ships Left</span>
+          <span id="liveShipsRemaining" class="live-stat-value">0</span>
         </div>
       </div>
 
