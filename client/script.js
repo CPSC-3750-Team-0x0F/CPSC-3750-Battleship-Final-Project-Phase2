@@ -42,6 +42,33 @@ function updateServerDisplay() {
     SERVER_BASE ? `Server: ${SERVER_BASE}` : "Server: None";
 }
 
+function clearServerInput() {
+  const input = document.getElementById("serverUrl");
+  if (input) input.value = "";
+
+  SERVER_BASE = "";
+  localStorage.removeItem("battleship_server_url");
+
+  updateServerDisplay();
+  setServerStatus("Server cleared");
+}
+
+function toggleServerList() {
+  const panel = document.getElementById("serverListPanel");
+  if (!panel) return;
+  panel.classList.toggle("hidden");
+}
+
+function selectServerFromList(url) {
+  const input = document.getElementById("serverUrl");
+  if (input) input.value = url;
+
+  const panel = document.getElementById("serverListPanel");
+  if (panel) panel.classList.add("hidden");
+
+  setServerStatus("Server selected. Click Connect.", "success");
+}
+
 function renderAvailableGames(games) {
   const container = document.getElementById("availableGamesList");
   if (!container) return;
@@ -290,6 +317,9 @@ async function connectToServer() {
     if (!testRes.ok) throw new Error("Server unreachable");
 
     SERVER_BASE = cleaned;
+
+    const panel = document.getElementById("serverListPanel");
+    if (panel) panel.classList.add("hidden");
 
     const regRes = await fetch(`${cleaned}/api/players`, {
       method: "POST",

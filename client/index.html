@@ -18,17 +18,126 @@
   </div>
 
   <!-- MOVED SERVER PANEL -->
-  <div class="floating-server-panel">
-    <input id="serverUrl" type="text" placeholder="Enter server URL" />
+    <div class="floating-server-panel">
+      <div class="server-input-row">
+        <button class="clear-server-btn" onclick="clearServerInput()" title="Clear current server">
+          ×
+        </button>
+        <input id="serverUrl" type="text" placeholder="Enter server URL" />
+      </div>
 
-    <div class="server-actions">
-      <button onclick="connectToServer()">Connect</button>
-      <button class="secondary-btn" onclick="resetClientServer()">Change</button>
-    </div>
+      <div class="server-actions">
+        <button onclick="connectToServer()">Connect</button>
+        <button class="secondary-btn" onclick="toggleServerList()">Server List</button>
+      </div>
 
-    <div id="serverConnectionStatus" class="server-status">Not connected</div>
-    <div id="currentServerDisplay" class="server-current">Server: None</div>
-  </div>
+      <div id="serverListPanel" class="server-list-panel hidden">
+
+        <button class="server-option current-server"
+                onclick="selectServerFromList(window.location.origin)">
+          Current Server (This Site)
+        </button>
+
+        <button class="server-option"
+                onclick="selectServerFromList('https://battleship-server-18q1.onrender.com')">
+          Team0x00
+        </button>
+
+        <button class="server-option"
+                onclick="selectServerFromList('https://battleship.koon.us')">
+          Team0x01
+        </button>
+
+        <button class="server-option"
+                onclick="selectServerFromList('https://finalproject-virusoutbreak-3bwa.onrender.com')">
+          Team0x02
+        </button>
+
+        <button class="server-option"
+                onclick="selectServerFromList('https://finalproject3750.onrender.com')">
+          Team0x03
+        </button>
+
+        <button class="server-option"
+                onclick="selectServerFromList('https://webdevgroupproj.onrender.com')">
+          Team0x04
+        </button>
+
+        <button class="server-option"
+                onclick="selectServerFromList('https://cpsc3720finalproject.onrender.com')">
+          Team0x05
+        </button>
+
+        <button class="server-option"
+                onclick="selectServerFromList('https://three750final.onrender.com')">
+          Team0x06
+        </button>
+
+        <button class="server-option"
+                onclick="selectServerFromList('https://persistent-waters.onrender.com')">
+          Team0x07
+        </button>
+
+        <button class="server-option"
+                onclick="selectServerFromList('https://p01--backend--zm8jxh5c8bph.code.run')">
+          Team0x08
+        </button>
+
+        <button class="server-option"
+                onclick="selectServerFromList('https://lightslategray-dogfish-869967.hostingersite.com')">
+          Team0x09
+        </button>
+
+        <button class="server-option"
+                onclick="selectServerFromList('https://battleship-1-qpm6.onrender.com')">
+          Team0x0A
+        </button>
+
+        <button class="server-option"
+                onclick="selectServerFromList('https://cpsc.loosesocket.com')">
+          Team0x0B
+        </button>
+
+        <button class="server-option"
+                onclick="selectServerFromList('https://battleship-advanced.onrender.com')">
+          Team0x0C
+        </button>
+
+        <button class="server-option"
+                onclick="selectServerFromList('https://vibe-hunter.com')">
+          Team0x0D
+        </button>
+
+        <button class="server-option"
+                onclick="selectServerFromList('https://cpsc3750-battleshipproject.onrender.com')">
+          Team0x0E
+        </button>
+
+        <button class="server-option"
+                onclick="selectServerFromList('https://cpsc-3750-battleship-final-project-phase1.onrender.com')">
+          Team0x0F
+        </button>
+
+        <button class="server-option"
+                onclick="selectServerFromList('https://capstone3750-production.up.railway.app')">
+          Team0x10
+        </button>
+
+        <button class="server-option"
+                onclick="selectServerFromList('https://battleship-cpsc3750.onrender.com')">
+          Team0x11
+        </button>
+
+  <button class="server-option"
+          onclick="selectServerFromList('https://final-project-7xwd.onrender.com')">
+    Team0x12
+  </button>
+
+</div>
+
+  <div id="serverConnectionStatus" class="server-status">Not connected</div>
+  <div id="currentServerDisplay" class="server-current">Server: None</div>
+</div>
 
   <div class="container">
     <section id="landingView">
