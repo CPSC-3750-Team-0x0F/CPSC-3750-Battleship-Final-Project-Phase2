@@ -82,6 +82,12 @@ exports.createGame = async (req, res) => {
       [game.game_id, creatorId]
     );
 
+    // Persistent Account Update: Increment games_played for the creator
+    await client.query(
+      "UPDATE players SET games_played = games_played + 1 WHERE player_id = $1",
+      [creatorId]
+    );
+
     await client.query("COMMIT");
 
     return res.status(201).json({
@@ -181,6 +187,12 @@ exports.joinGame = async (req, res) => {
       "INSERT INTO game_players (game_id, player_id, turn_order) VALUES ($1, $2, $3)",
       [gameId, playerId, currentCount]
     );
+
+// Persistent Account Update: Increment games_played when a player joins a match
+await client.query(
+  "UPDATE players SET games_played = games_played + 1 WHERE player_id = $1",
+  [playerId]
+);
 
     await client.query("COMMIT");
 

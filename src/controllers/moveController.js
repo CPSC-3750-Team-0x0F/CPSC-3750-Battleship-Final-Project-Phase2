@@ -277,15 +277,18 @@ exports.fireShot = async (req, res) => {
         [winnerId, gameId]
       );
 
+      // PERSISTENT ACCOUNT UPDATE:
+      // We only update Wins/Losses here. 
+      // games_played was already incremented in gameController when the match started.
       await client.query(
-        "UPDATE players SET wins = wins + 1, games_played = games_played + 1 WHERE player_id = $1",
+        "UPDATE players SET wins = wins + 1 WHERE player_id = $1",
         [winnerId]
       );
 
       await client.query(
         `
         UPDATE players
-        SET losses = losses + 1, games_played = games_played + 1
+        SET losses = losses + 1
         WHERE player_id IN (
           SELECT player_id
           FROM game_players
@@ -294,7 +297,8 @@ exports.fireShot = async (req, res) => {
         `,
         [gameId, winnerId]
       );
-    } else {
+    }
+	else {
       const currentIdx = players.findIndex((p) => p.turn_order === currentTurnIndex);
       const nextIdx = (currentIdx + 1) % players.length;
       const nextTurnIndex = players[nextIdx].turn_order;

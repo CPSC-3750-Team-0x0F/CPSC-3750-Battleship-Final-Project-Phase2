@@ -2,6 +2,9 @@ const db = require("../db");
 
 /**
  * Handles POST /api/players
+ * Modified to support persistent accounts: 
+ * If username exists, returns existing player_id (Login).
+ * If username is new, creates a new record (Register).
  */
 exports.createPlayer = async (req, res) => {
   const { username } = req.body || {};
@@ -13,6 +16,7 @@ exports.createPlayer = async (req, res) => {
     });
   }
 
+  // Regex allows letters, numbers, and underscores (consistent with your existing logic)
   if (username.length > 30 || /[^a-zA-Z0-9_]/.test(username)) {
     return res.status(400).json({ 
       error: "bad_request", 
@@ -21,14 +25,21 @@ exports.createPlayer = async (req, res) => {
   }
 
   try {
-    const existing = await db.query("SELECT 1 FROM players WHERE username = $1", [username]);
+    // Check if player already exists
+    const existing = await db.query(
+      "SELECT player_id FROM players WHERE username = $1", 
+      [username]
+    );
+
     if (existing.rows.length > 0) {
-      return res.status(409).json({ 
-        error: "conflict", 
-        message: "username taken" 
+      // Login: Return existing player_id
+      return res.status(200).json({ 
+        player_id: Number(existing.rows[0].player_id),
+        message: "Welcome back!"
       });
     }
 
+    // Register: Create new player
     const result = await db.query(
       "INSERT INTO players (username) VALUES ($1) RETURNING player_id",
       [username]
@@ -44,20 +55,15 @@ exports.createPlayer = async (req, res) => {
 };
 
 /**
- * Handles GET /api/players/{id}/stats
- * FIX [REF0013/15/91]: Standardized field names and guaranteed numeric types
+ * Handles GET /api/players/:id/stats
+ * Returns the lifetime stats for a persistent account.
  */
 exports.getPlayerStats = async (req, res) => {
   const { id } = req.params;
 
-  if (!/^\d+$/.test(String(id))) {
-    return res.status(404).json({ error: "not_found", message: "player not found" });
-  }
-
   try {
-    // Pull career stats directly from the players table (matches moveController logic)
     const playerRes = await db.query(
-      `SELECT player_id, games_played, wins, losses, total_shots, total_hits 
+      `SELECT player_id, username, games_played, wins, losses, total_shots, total_hits 
        FROM players WHERE player_id = $1`, 
       [id]
     );
@@ -76,9 +82,9 @@ exports.getPlayerStats = async (req, res) => {
     const totalHits = Number(p.total_hits || 0);
     const accuracy = totalShots > 0 ? Number((totalHits / totalShots).toFixed(2)) : 0.0;
 
-    // Return the exact schema the autograder looks for
     return res.status(200).json({
       player_id: Number(p.player_id),
+      username: p.username,
       games_played: Number(p.games_played || 0),
       wins: Number(p.wins || 0),
       losses: Number(p.losses || 0),
@@ -94,13 +100,19 @@ exports.getPlayerStats = async (req, res) => {
 
 /**
  * Handles GET /api/players
+ * Useful for leaderboards or administrative views.
  */
 exports.getAllPlayers = async (req, res) => {
   try {
-    const result = await db.query("SELECT player_id, username FROM players ORDER BY player_id ASC");
+    const result = await db.query(
+      "SELECT player_id, username, wins, losses, games_played FROM players ORDER BY wins DESC"
+    );
     const players = result.rows.map(p => ({
       player_id: Number(p.player_id),
-      username: p.username
+      username: p.username,
+      wins: Number(p.wins || 0),
+      losses: Number(p.losses || 0),
+      games_played: Number(p.games_played || 0)
     }));
     return res.status(200).json(players);
   } catch (err) {
