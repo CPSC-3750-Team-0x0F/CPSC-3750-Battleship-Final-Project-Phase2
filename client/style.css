@@ -181,7 +181,10 @@ body::after {
 
 /* Adjust theme toggle so they don't overlap if needed */
 .theme-toggle {
-  top: 80px; /* Pushed down slightly to make room for profile */
+  position: fixed;
+  top: 24px;
+  left: 24px;
+  z-index: 1100;
 }
 
 .hidden {
