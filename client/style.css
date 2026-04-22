@@ -135,6 +135,22 @@ body::after {
   transition: opacity 0.25s ease;
 }
 
+/* Logo Styling */
+.main-logo {
+  display: block;
+  margin: 0 auto 20px; /* Centers the logo and adds space below it */
+  max-width: 280px;    /* Limits the size so it doesn't overwhelm the screen */
+  height: auto;
+  filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.3)); /* Adds depth to the logo */
+}
+
+/* Make it slightly smaller on small mobile screens */
+@media (max-width: 560px) {
+  .main-logo {
+    max-width: 200px;
+  }
+}
+
 .hidden {
   display: none !important;
   opacity: 0;
