@@ -432,9 +432,27 @@ function showGame() {
 function goHome() {
   stopPolling();
   closeLobbyModal();
-  document.getElementById("gameResultOverlay").classList.add("hidden");
+
+  const overlay = document.getElementById("gameResultOverlay");
+  if (overlay) overlay.classList.add("hidden");
+
+  // clear current game session
+  currentGameId = null;
+  currentGameData = null;
+  currentTurnOrder = null;
+  placementMode = false;
+  pendingShips = [];
+
+  localStorage.removeItem(STORAGE_KEYS.gameId);
+  localStorage.removeItem(STORAGE_KEYS.turnOrder);
+
   clearLiveGameStats();
+
+  // rebuild clean lobby state
+  loadAvailableGames();
   showLanding();
+
+  setStatus("Returned to lobby.");
 }
 
 function openCreateGameModal() {
