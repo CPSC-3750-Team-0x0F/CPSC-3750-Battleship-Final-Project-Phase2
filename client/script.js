@@ -1162,3 +1162,30 @@ window.onclick = function(event) {
     toggleHowToPlay();
   }
 }
+
+document.getElementById("exitGameBtn").addEventListener("click", () => {
+  // 1. Stop polling the server for game updates
+  if (pollInterval) {
+    clearInterval(pollInterval);
+    pollInterval = null;
+  }
+
+  // 2. Clear game-specific variables
+  currentGameId = null;
+  currentGameData = null;
+  currentTurnOrder = null;
+
+  // 3. Remove game ID from local storage so it doesn't auto-rejoin on refresh
+  localStorage.removeItem(STORAGE_KEYS.gameId);
+
+  // 4. Reset the UI: Hide the game screen and result screen, show the lobby
+  document.getElementById("gameScreen").classList.add("hidden");
+  document.getElementById("resultScreen").classList.add("hidden");
+  document.getElementById("lobbyScreen").classList.remove("hidden");
+
+  // 5. Refresh the list of available games
+  loadAvailableGames();
+  
+  // Optional: Reset status message
+  setStatus("Returned to lobby");
+});
