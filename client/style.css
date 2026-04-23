@@ -82,10 +82,10 @@ body::before {
   pointer-events: none;
   z-index: 0;
   background:
-    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+    linear-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.07) 1px, transparent 1px);
   background-size: 34px 34px;
-  opacity: 0.18;
+  opacity: 0.4;
 }
 
 body::after {
@@ -1088,9 +1088,10 @@ body.light-mode {
 
 body.light-mode::before {
   background:
-    linear-gradient(rgba(16, 32, 48, 0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(16, 32, 48, 0.04) 1px, transparent 1px);
-  opacity: 0.2;
+    linear-gradient(rgba(16, 32, 48, 0.12) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(16, 32, 48, 0.12) 1px, transparent 1px);
+  background-size: 34px 34px;
+  opacity: 0.55;
 }
 
 body.light-mode::after {
@@ -1104,6 +1105,17 @@ body.light-mode::after {
     rgba(47, 128, 237, 0.03) 65%,
     transparent 100%
   );
+}
+
+body.light-mode .secondary-btn {
+  background: #c7d9eb;
+  color: #102030;
+  border: 1px solid rgba(16, 32, 48, 0.12);
+}
+
+body.light-mode .secondary-btn:hover {
+  background: #b6cee6;
+  color: #102030;
 }
 
 body.light-mode .card,
@@ -1428,4 +1440,10 @@ body.light-mode .server-option {
   font-weight: 700;
   margin: 0 0 18px 0;
   line-height: 1.2;
+}
+
+#careerStatsCard.hidden {
+  display: block !important;
+  visibility: hidden;
+  pointer-events: none;
 }
