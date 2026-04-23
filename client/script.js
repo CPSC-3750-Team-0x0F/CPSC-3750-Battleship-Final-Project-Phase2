@@ -278,21 +278,6 @@ async function loadCareerStats() {
   }
 }
 
-function exitFinishedGame() {
-  stopPolling();
-
-  const overlay = document.getElementById("gameResultOverlay");
-  if (overlay) overlay.classList.add("hidden");
-
-  currentGameId = null;
-  currentGameData = null;
-  currentTurnOrder = null;
-  placementMode = false;
-  pendingShips = [];
-
-  localStorage.removeItem(STORAGE_KEYS.gameId);
-  localStorage.removeItem(STORAGE_KEYS.turnOrder);
-
   clearLiveGameStats();
   showLanding();
   loadAvailableGames();
