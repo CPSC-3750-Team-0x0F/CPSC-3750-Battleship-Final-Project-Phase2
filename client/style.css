@@ -54,7 +54,7 @@ body.light-mode {
 
   --success: #1fa35b;
   --danger: #d64545;
-  --warning: #f4c542;
+  --warning: #d97706;
 
   --shadow-lg: 0 16px 36px rgba(20, 40, 70, 0.12);
   --shadow-md: 0 10px 22px rgba(20, 40, 70, 0.10);
@@ -1660,10 +1660,11 @@ body.light-mode .ship-item.selected {
   border-color: #004494;
 }
 
-body.light-mode .turn-indicator {
-  background: #f1f5f9;
-  border: 1px solid #cbd5e1;
-  color: #475569;
+/* High contrast turn indicator for the "Waiting" or "Yellow" state */
+body.light-mode .turn-indicator.waiting {
+  background: #fef3c7 !important;
+  color: #92400e !important;
+  border: 1px solid #f59e0b;
 }
 
 /* High contrast for YOUR turn (Success Green) */
@@ -1680,4 +1681,28 @@ body.light-mode .turn-indicator.opponent-turn {
   color: #ffffff !important;
   font-weight: 800;
   border: none;
+}
+
+body.light-mode .cell.valid {
+  background: rgba(46, 204, 113, 0.4) !important; /* Semi-transparent success green */
+  border: 2px solid var(--success);
+}
+
+body.light-mode .cell.invalid {
+  background: rgba(231, 76, 60, 0.4) !important; /* Semi-transparent danger red */
+  border: 2px solid var(--danger);
+}
+
+/* Ensure ships already placed are visible */
+body.light-mode .cell.ship {
+  background: #475569 !important; /* Dark slate for ship bodies */
+  border-color: #334155;
+}
+
+body.light-mode .cell.hit::after {
+  background-color: #b91c1c !important; /* Solid Dark Red */
+}
+
+body.light-mode .cell.miss::after {
+  background-color: #64748b !important; /* Darker Gray/Blue */
 }
