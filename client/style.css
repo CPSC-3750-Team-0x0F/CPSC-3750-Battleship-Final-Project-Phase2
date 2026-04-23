@@ -1447,3 +1447,46 @@ body.light-mode .server-option {
   visibility: hidden;
   pointer-events: none;
 }
+
+body.light-mode .floating-server-panel {
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-md);
+}
+
+body.light-mode .floating-server-panel input {
+  background: rgba(16, 32, 48, 0.04);
+  color: var(--text-main);
+  border: 1px solid var(--border);
+}
+
+body.light-mode .floating-server-panel input::placeholder {
+  color: #6c7c8d;
+}
+
+body.light-mode .server-status {
+  color: var(--text-soft);
+}
+
+body.light-mode .server-status.success {
+  color: var(--success);
+}
+
+body.light-mode .server-status.error {
+  color: var(--danger);
+}
+
+body.light-mode .server-current {
+  color: var(--text-soft);
+}
+
+body.light-mode .clear-server-btn {
+  background: var(--secondary);
+  color: var(--text-main);
+  border: 1px solid rgba(16, 32, 48, 0.08);
+}
+
+body.light-mode .clear-server-btn:hover {
+  background: var(--danger);
+  color: white;
+}
