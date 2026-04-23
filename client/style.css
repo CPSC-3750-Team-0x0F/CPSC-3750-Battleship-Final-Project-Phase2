@@ -1176,20 +1176,10 @@ body.light-mode .turn-badge.active {
   color: #1b2430;
 }
 
-body.light-mode .cell {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-}
-
 body.light-mode .cell.placeable:hover,
 body.light-mode .cell.targetable:hover {
   background: #c7dbef;
   border-color: rgba(47, 128, 237, 0.85);
-}
-
-body.light-mode .cell.ship {
-  background: #8d9ba8;
-  border-color: rgba(16, 32, 48, 0.15);
 }
 
 body.light-mode .cell.pending-ship {
@@ -1696,6 +1686,7 @@ body.light-mode .turn-indicator.opponent-turn {
   color: #ffffff !important;
 }
 
+/* Remove !important here so specific states can take over */
 body.light-mode .cell {
   background: #f8fafc;
   border: 1px solid #e2e8f0;
