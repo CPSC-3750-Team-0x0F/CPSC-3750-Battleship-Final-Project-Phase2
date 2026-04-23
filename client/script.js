@@ -1,4 +1,4 @@
-let SERVER_BASE = localStorage.getItem("battleship_server_url") || "";
+let SERVER_BASE = localStorage.getItem("battleship_server_url") || "cpsc-3750-battleship-final-project-phase2-3zol";
 
 let currentPlayerId = null;
 let currentGameId = null;
