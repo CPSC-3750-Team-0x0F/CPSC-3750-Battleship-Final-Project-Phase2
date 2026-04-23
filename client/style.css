@@ -1177,8 +1177,8 @@ body.light-mode .turn-badge.active {
 }
 
 body.light-mode .cell {
-  background: #dbe8f4;
-  border: 1px solid rgba(16, 32, 48, 0.08);
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
 }
 
 body.light-mode .cell.placeable:hover,
@@ -1660,53 +1660,44 @@ body.light-mode .ship-item.selected {
   border-color: #004494;
 }
 
-/* --- High Contrast Turn Indicators for Light Mode --- */
+/* --- High Contrast Light Mode Overrides --- */
 
-/* Waiting/Order state (Deep Amber) */
-body.light-mode .turn-indicator.waiting {
-  background-color: #f59e0b !important;
-  color: #ffffff !important; /* White text on dark amber */
-  font-weight: 700;
-  border: 1px solid #d97706;
-}
-
-/* Your Turn (Vibrant Green) */
-body.light-mode .turn-indicator.your-turn {
-  background-color: #16a34a !important;
-  color: #ffffff !important;
-  font-weight: 800;
-}
-
-/* Opponent Turn (Vibrant Red) */
-body.light-mode .turn-indicator.opponent-turn {
-  background-color: #dc2626 !important;
-  color: #ffffff !important;
-  font-weight: 800;
-}
-
-/* Valid placement (Green) */
+/* 1. Placement Tiles */
 body.light-mode .cell.valid {
   background-color: #27ae60 !important; 
   border: 2px solid #1e8449 !important;
-  opacity: 1 !important;
 }
 
-/* Invalid placement (Red) */
 body.light-mode .cell.invalid {
-  background-color: #c0392b !important;
+  background-color: #c0392b !important; 
   border: 2px solid #922b21 !important;
-  opacity: 1 !important;
 }
 
-/* Ships already placed (Slate) */
+/* 2. Placed Ships */
 body.light-mode .cell.ship {
-  background-color: #334155 !important;
-  border-color: #1e293b !important;
-  opacity: 1 !important;
+  background-color: #334155 !important; 
+  border-color: #0f172a !important;
 }
 
-/* Base cell in light mode - keep it subtle so the colors above pop */
-body.light-mode .cell {
-  background: rgba(0, 0, 0, 0.03);
-  border: 1px solid rgba(0, 0, 0, 0.1);
+/* 3. Turn Indicators */
+body.light-mode .turn-indicator.waiting {
+  background-color: #f59e0b !important; /* Solid Amber */
+  color: #ffffff !important;
+  border: 1px solid #b45309;
 }
+
+body.light-mode .turn-indicator.your-turn {
+  background-color: #16a34a !important; /* Solid Success Green */
+  color: #ffffff !important;
+}
+
+body.light-mode .turn-indicator.opponent-turn {
+  background-color: #dc2626 !important; /* Solid Danger Red */
+  color: #ffffff !important;
+}
+
+body.light-mode .cell {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+

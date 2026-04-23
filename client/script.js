@@ -1189,3 +1189,21 @@ document.getElementById("exitGameBtn").addEventListener("click", () => {
   // Optional: Reset status message
   setStatus("Returned to lobby");
 });
+
+function updateTurnDisplay(status) {
+  const indicator = document.getElementById("turnIndicator");
+  
+  // Reset classes first so they don't stack
+  indicator.classList.remove("waiting", "your-turn", "opponent-turn");
+
+  if (status === "waiting") {
+    indicator.classList.add("waiting");
+    indicator.textContent = "Waiting for players...";
+  } else if (status === "my_turn") {
+    indicator.classList.add("your-turn");
+    indicator.textContent = "YOUR TURN";
+  } else {
+    indicator.classList.add("opponent-turn");
+    indicator.textContent = "OPPONENT'S TURN";
+  }
+}
