@@ -387,11 +387,11 @@ button:active {
   transition: all 0.18s ease;
 }
 
-.turn-badge.active {
-  background: var(--warning);
-  color: #17212f;
-  border-color: rgba(255, 209, 102, 0.8);
-  box-shadow: 0 0 16px rgba(255, 209, 102, 0.2);
+body.light-mode .turn-badge.active {
+  background: var(--primary); /* Uses blue instead of yellow for light mode */
+  color: #ffffff;
+  border-color: var(--primary-hover);
+  box-shadow: 0 4px 12px rgba(47, 128, 237, 0.2);
 }
 
 .boards {
@@ -1086,15 +1086,6 @@ button:active {
   letter-spacing: 0.03em;
 }
 
-body.light-mode {
-  background: linear-gradient(
-    180deg,
-    var(--bg-dark) 0%,
-    var(--bg-mid) 58%,
-    var(--bg-light) 100%
-  );
-}
-
 body.light-mode::before {
   background:
     linear-gradient(rgba(16, 32, 48, 0.12) 1px, transparent 1px),
@@ -1637,58 +1628,36 @@ body:not(.light-mode) .connection-toggle .toggle-image {
   filter: brightness(0) invert(1);
 }
 
-body.light-mode .ship-item {
-  background: rgba(0, 0, 0, 0.05);
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  color: var(--bg-dark);
-}
+/* --- Light Mode Overrides for Game States --- */
 
-body.light-mode .ship-item.selected {
-  background: #0056b3 !important; /* Darker blue for high contrast */
-  color: #ffffff !important;      /* White text for readability */
-  box-shadow: 0 4px 12px rgba(0, 86, 179, 0.3);
-  border-color: #004494;
-}
-
-/* --- High Contrast Light Mode Overrides --- */
-
-/* 1. Placement Tiles */
-body.light-mode .cell.valid {
-  background-color: #27ae60 !important; 
-  border: 2px solid #1e8449 !important;
-}
-
-body.light-mode .cell.invalid {
-  background-color: #c0392b !important; 
-  border: 2px solid #922b21 !important;
-}
-
-/* 2. Placed Ships */
+/* Placed ships in light mode (Darker gray/blue for contrast) */
 body.light-mode .cell.ship {
-  background-color: #334155 !important; 
-  border-color: #0f172a !important;
+  background-color: #334155 !important;
+  border-color: #1e293b;
 }
 
-/* 3. Turn Indicators */
-body.light-mode .turn-indicator.waiting {
-  background-color: #f59e0b !important; /* Solid Amber */
-  color: #ffffff !important;
-  border: 1px solid #b45309;
+/* Hit state (Slightly darker green for light background) */
+body.light-mode .cell.hit {
+  background-color: #27ae60 !important;
+  border-color: #1e8449;
 }
 
-body.light-mode .turn-indicator.your-turn {
-  background-color: #16a34a !important; /* Solid Success Green */
-  color: #ffffff !important;
+/* Miss state (Slightly darker red for light background) */
+body.light-mode .cell.miss {
+  background-color: #e74c3c !important;
+  border-color: #c0392b;
 }
 
-body.light-mode .turn-indicator.opponent-turn {
-  background-color: #dc2626 !important; /* Solid Danger Red */
-  color: #ffffff !important;
+/* Pending/Placement state */
+body.light-mode .cell.pending-ship {
+  background-color: #64748b !important;
+  border-color: #475569;
 }
 
-/* Remove !important here so specific states can take over */
-body.light-mode .cell {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+/* FIX: Turn Indicator Text Color */
+/* This ensures "Your Turn" is readable in light mode */
+body.light-mode .turn-badge.active {
+  background-color: var(--primary) !important;
+  color: #ffffff !important; 
+  box-shadow: 0 4px 12px rgba(47, 128, 237, 0.3);
 }
-
