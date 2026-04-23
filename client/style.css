@@ -179,11 +179,12 @@ body::after {
   font-size: 0.95rem;
 }
 
-/* Adjust theme toggle so they don't overlap if needed */
 .theme-toggle {
   position: fixed;
   top: 24px;
   left: 24px;
+
+  height: 42px;
   z-index: 1100;
 }
 
@@ -1543,20 +1544,29 @@ body.light-mode .clear-server-btn:hover {
   line-height: 1.5;
 }
 
-/* Help button styling */
 .help-toggle {
   position: fixed;
-  top: 20px;
-  left: 140px; /* Positioned next to your theme toggle */
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
+  top: 24px;          /* match theme button */
+  left: 170px;        /* adjust if needed */
+
+  width: 42px;
+  height: 42px;
+  padding: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 12px;
   background: var(--panel-strong);
   color: var(--text-main);
   border: 1px solid var(--border);
+
   cursor: pointer;
-  font-weight: bold;
-  z-index: 1000;
+  font-weight: 800;
+  font-size: 1.1rem;
+
+  z-index: 1100;
 }
 
 /* Utility to hide/show */

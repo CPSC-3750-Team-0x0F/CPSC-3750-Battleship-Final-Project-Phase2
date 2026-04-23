@@ -299,14 +299,9 @@ async function loadLiveGameStats() {
 
 async function connectToServer() {
   const input = document.getElementById("serverUrl").value.trim();
-  const usernameInput = document.getElementById("username").value.trim();
 
   if (!input) {
     setServerStatus("Please enter a server URL.", "error");
-    return;
-  }
-  if (!usernameInput) {
-    setServerStatus("Please enter a username first.", "error");
     return;
   }
 
@@ -321,32 +316,13 @@ async function connectToServer() {
     const panel = document.getElementById("serverListPanel");
     if (panel) panel.classList.add("hidden");
 
-    const regRes = await fetch(`${cleaned}/api/players`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username: usernameInput })
-    });
+    localStorage.setItem("battleship_server_url", SERVER_BASE);
 
-    const data = await regRes.json();
-    if (regRes.ok) {
-      currentPlayerId = Number(data.player_id);
-      currentUsername = data.username || usernameInput;
-
-      showAccountHeader(currentUsername);
-      await loadCareerStats();
-
-      localStorage.setItem("battleship_server_url", SERVER_BASE);
-      localStorage.setItem(STORAGE_KEYS.username, currentUsername);
-      localStorage.setItem(STORAGE_KEYS.playerId, currentPlayerId);
-
-      updateServerDisplay();
-      setServerStatus("Connected as " + currentUsername, "success");
-      loadAvailableGames();
-    } else {
-      throw new Error(data.message || "Registration failed");
-    }
+    updateServerDisplay();
+    setServerStatus("Connected to server", "success");
+    loadAvailableGames();
   } catch (err) {
-    setServerStatus(err.message, "error");
+    setServerStatus(err.message || "Failed to connect", "error");
   }
 }
 
