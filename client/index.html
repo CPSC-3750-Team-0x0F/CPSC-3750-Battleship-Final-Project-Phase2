@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <button class="help-toggle" onclick="toggleHowToPlay()">?</button>
   <button id="themeToggle" class="theme-toggle" onclick="toggleTheme()">
     Light Mode
   </button>
@@ -367,5 +368,20 @@
   </div>
 
   <script src="script.js"></script>
+
+<div id="howToPlayOverlay" class="modal-overlay hidden">
+  <div class="modal-content">
+    <button class="close-x" onclick="toggleHowToPlay()">×</button>
+    <h2>How to Play</h2>
+    <div class="instructions">
+      <p><strong>1. Connect:</strong> Enter a server URL and click Connect.</p>
+      <p><strong>2. Profile:</strong> Enter a username to create or login to your account.</p>
+      <p><strong>3. Join:</strong> Create a new game or join an existing one from the list.</p>
+      <p><strong>4. Setup:</strong> Place your 3 ships on the grid by clicking empty cells.</p>
+      <p><strong>5. Battle:</strong> Take turns firing at the enemy grid. Sinking all enemy ships wins the game!</p>
+    </div>
+    <button class="primary-btn" style="margin-top: 20px;" onclick="toggleHowToPlay()">Got it!</button>
+  </div>
+</div>
 </body>
 </html>

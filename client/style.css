@@ -1490,3 +1490,76 @@ body.light-mode .clear-server-btn:hover {
   background: var(--danger);
   color: white;
 }
+
+/* Modal Overlay (The dimming effect) */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.75); /* Dims the background */
+  backdrop-filter: blur(4px);    /* Optional: blurs background */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 3000;                /* Ensures it is above everything else */
+}
+
+/* The actual window */
+.modal-content {
+  background: var(--panel);
+  padding: 40px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  max-width: 500px;
+  width: 90%;
+  position: relative; /* Needed for positioning the X */
+  box-shadow: var(--shadow-lg);
+  text-align: left;
+}
+
+/* The clickable X in the top left */
+.close-x {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  background: none;
+  border: none;
+  color: var(--text-soft);
+  font-size: 24px;
+  cursor: pointer;
+  line-height: 1;
+  transition: color 0.2s;
+}
+
+.close-x:hover {
+  color: var(--danger);
+}
+
+.instructions p {
+  margin-bottom: 12px;
+  color: var(--text-main);
+  line-height: 1.5;
+}
+
+/* Help button styling */
+.help-toggle {
+  position: fixed;
+  top: 20px;
+  left: 140px; /* Positioned next to your theme toggle */
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--panel-strong);
+  color: var(--text-main);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  font-weight: bold;
+  z-index: 1000;
+}
+
+/* Utility to hide/show */
+.hidden {
+  display: none !important;
+}

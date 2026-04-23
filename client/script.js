@@ -1148,3 +1148,15 @@ function showAccountHeader(username) {
     profileDiv.classList.remove("hidden");
   }
 }
+
+function toggleHowToPlay() {
+  const overlay = document.getElementById("howToPlayOverlay");
+  overlay.classList.toggle("hidden");
+}
+
+// Optional: Close modal if user clicks on the dimmed background area
+document.getElementById("howToPlayOverlay").addEventListener("click", (e) => {
+  if (e.target.id === "howToPlayOverlay") {
+    toggleHowToPlay();
+  }
+});
