@@ -1660,49 +1660,53 @@ body.light-mode .ship-item.selected {
   border-color: #004494;
 }
 
-/* High contrast turn indicator for the "Waiting" or "Yellow" state */
+/* --- High Contrast Turn Indicators for Light Mode --- */
+
+/* Waiting/Order state (Deep Amber) */
 body.light-mode .turn-indicator.waiting {
-  background: #fef3c7 !important;
-  color: #92400e !important;
-  border: 1px solid #f59e0b;
+  background-color: #f59e0b !important;
+  color: #ffffff !important; /* White text on dark amber */
+  font-weight: 700;
+  border: 1px solid #d97706;
 }
 
-/* High contrast for YOUR turn (Success Green) */
+/* Your Turn (Vibrant Green) */
 body.light-mode .turn-indicator.your-turn {
-  background: #15803d !important; /* Deep forest green */
+  background-color: #16a34a !important;
   color: #ffffff !important;
   font-weight: 800;
-  border: none;
 }
 
-/* High contrast for OPPONENT'S turn (Danger Red) */
+/* Opponent Turn (Vibrant Red) */
 body.light-mode .turn-indicator.opponent-turn {
-  background: #b91c1c !important; /* Deep crimson red */
+  background-color: #dc2626 !important;
   color: #ffffff !important;
   font-weight: 800;
-  border: none;
 }
 
+/* Valid placement (Green) */
 body.light-mode .cell.valid {
-  background: rgba(46, 204, 113, 0.4) !important; /* Semi-transparent success green */
-  border: 2px solid var(--success);
+  background-color: #27ae60 !important; 
+  border: 2px solid #1e8449 !important;
+  opacity: 1 !important;
 }
 
+/* Invalid placement (Red) */
 body.light-mode .cell.invalid {
-  background: rgba(231, 76, 60, 0.4) !important; /* Semi-transparent danger red */
-  border: 2px solid var(--danger);
+  background-color: #c0392b !important;
+  border: 2px solid #922b21 !important;
+  opacity: 1 !important;
 }
 
-/* Ensure ships already placed are visible */
+/* Ships already placed (Slate) */
 body.light-mode .cell.ship {
-  background: #475569 !important; /* Dark slate for ship bodies */
-  border-color: #334155;
+  background-color: #334155 !important;
+  border-color: #1e293b !important;
+  opacity: 1 !important;
 }
 
-body.light-mode .cell.hit::after {
-  background-color: #b91c1c !important; /* Solid Dark Red */
-}
-
-body.light-mode .cell.miss::after {
-  background-color: #64748b !important; /* Darker Gray/Blue */
+/* Base cell in light mode - keep it subtle so the colors above pop */
+body.light-mode .cell {
+  background: rgba(0, 0, 0, 0.03);
+  border: 1px solid rgba(0, 0, 0, 0.1);
 }
