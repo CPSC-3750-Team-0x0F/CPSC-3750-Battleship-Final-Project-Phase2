@@ -583,15 +583,17 @@ button:active {
   min-width: 160px;
 }
 
+/* Ensure modals dim the background and center content */
 .modal {
   position: fixed;
   inset: 0;
-  background: rgba(5, 10, 18, 0.72);
+  background: rgba(5, 10, 18, 0.85); /* Darker dim for better focus */
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 999;
+  z-index: 3000; /* Higher than top-left-controls (2000) */
   padding: 20px;
+  backdrop-filter: blur(4px); /* Adds a modern blurred look behind the modal */
 }
 
 .modal-card {
@@ -1375,11 +1377,13 @@ body.light-mode .live-stat-pill {
   }
 }
 
+/* Container for the button and input */
 .server-input-row {
   display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 12px;
+  gap: 8px; /* Space between the Clear button and the input */
+  align-items: stretch; /* Makes both elements the same height */
+  margin-bottom: 15px;
+  width: 100%;
 }
 
 .server-input-row input {
@@ -1387,22 +1391,21 @@ body.light-mode .live-stat-pill {
   flex: 1;
 }
 
+/* Specific styling for the 'Clear' button */
 .clear-server-btn {
-  width: 38px;
-  min-width: 38px;
-  height: 38px;
-  padding: 0;
-  border-radius: 10px;
-  background: var(--secondary);
-  color: var(--text-main);
-  font-size: 1.3rem;
-  font-weight: 800;
-  line-height: 1;
+  width: auto; /* Allow width to fit the 'Clear' text */
+  padding: 0 16px;
+  margin-bottom: 0 !important; /* Remove bottom margin to align with input */
+  background: var(--secondary); /* Uses your existing dark blue theme */
+  white-space: nowrap; /* Prevents text from wrapping */
+  height: 46px; /* Matches your default input height */
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .clear-server-btn:hover {
-  background: var(--danger);
-  color: white;
+  background: var(--secondary-hover);
 }
 
 .server-list-panel{
@@ -1631,4 +1634,15 @@ body.light-mode .move-result.miss {
 
 body.light-mode #themeIcon[src="moon.png"] {
   filter: none; /* This ensures your gray moon stays exactly as the file is */
+}
+
+/* Optional: Adjust the new button to match others */
+.connection-toggle img {
+  filter: invert(var(--theme-invert, 0)); /* Helps icon visibility in different modes */
+}
+
+/* If your server.png is dark, this will invert it for dark mode automatically 
+   (Remove this if your icon is already light-colored) */
+body:not(.light-mode) .connection-toggle .toggle-image {
+  filter: brightness(0) invert(1);
 }

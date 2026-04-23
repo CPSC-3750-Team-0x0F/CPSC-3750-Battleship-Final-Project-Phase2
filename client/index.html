@@ -13,28 +13,18 @@
   <button id="themeToggle" class="icon-button theme-toggle" onclick="toggleTheme()">
     <img id="themeIcon" src="sun.png" alt="Theme Icon" class="toggle-image">
   </button>
-</div>
-
-  <div id="userProfile" class="user-profile hidden">
-    <img src="avatar.png" alt="User Avatar" class="avatar-circle">
-    <span id="displayUsername" class="username-text"></span>
-  </div>
-
-  <!-- MOVED SERVER PANEL -->
-    <div class="floating-server-panel">
-      <div class="server-input-row">
-        <button type="button" class="clear-server-btn" onclick="clearServerInput()" title="Clear current server">
-          ×
-        </button>
-        <input id="serverUrl" type="text" placeholder="Enter server URL" />
-      </div>
-
-      <div class="server-actions">
-        <button type="button" onclick="connectToServer()">Connect</button>
-        <button type="button" class="secondary-btn" onclick="toggleServerList()">Server List</button>
-      </div>
-
-      <div id="serverListPanel" class="server-list-panel hidden">
+<button class="icon-button connection-toggle" onclick="toggleServerModal()">
+<img src="server.png" alt="Server" class="toggle-image">
+</button>
+<div id="serverModal" class="modal-overlay hidden">
+  <div class="modal-card">
+    <button class="close-x" onclick="toggleServerModal()">×</button>
+    <h2>Server Connection</h2>
+    <div class="server-input-row">
+       <button type="button" class="clear-server-btn" onclick="clearServerInput()" title="Clear current server">Clear</button>
+       <input id="serverUrl" type="text" placeholder="Enter server URL" />
+    </div>
+<div id="serverListPanel" class="server-list-panel hidden">
 
         <button type="button" class="server-option current-server"
                 onclick="selectServerFromList(window.location.origin)">
@@ -138,9 +128,18 @@
 
 </div>
 
-  <div id="serverConnectionStatus" class="server-status">Not connected</div>
-  <div id="currentServerDisplay" class="server-current">Server: None</div>
+    <div class="server-actions">
+       <button type="button" onclick="connectAndClose()">Connect</button>
+       <button type="button" class="secondary-btn" onclick="toggleServerList()">Server List</button>
+    </div>
+    </div>
 </div>
+</div>
+
+  <div id="userProfile" class="user-profile hidden">
+    <img src="avatar.png" alt="User Avatar" class="avatar-circle">
+    <span id="displayUsername" class="username-text"></span>
+  </div>
 
   <div class="container">
     <section id="landingView">

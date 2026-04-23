@@ -1138,3 +1138,31 @@ document.getElementById("howToPlayOverlay").addEventListener("click", (e) => {
     toggleHowToPlay();
   }
 });
+
+// Function to show/hide the server modal
+function toggleServerModal() {
+  const modal = document.getElementById("serverModal");
+  modal.classList.toggle("hidden");
+}
+
+// Wrapper to close modal after successful connection
+async function connectAndClose() {
+  const wasConnected = await connectToServer();
+  // If connectToServer returns true on success, close the modal
+  const statusEl = document.getElementById("serverConnectionStatus");
+  if (statusEl.classList.contains("success")) {
+    toggleServerModal();
+  }
+}
+
+// Close modal if user clicks the dimmed background
+window.onclick = function(event) {
+  const serverModal = document.getElementById("serverModal");
+  const helpModal = document.getElementById("howToPlayOverlay");
+  
+  if (event.target == serverModal) {
+    toggleServerModal();
+  } else if (event.target == helpModal) {
+    toggleHowToPlay();
+  }
+}
