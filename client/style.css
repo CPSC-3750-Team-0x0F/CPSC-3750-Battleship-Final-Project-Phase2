@@ -1573,3 +1573,13 @@ body.light-mode .clear-server-btn:hover {
 .hidden {
   display: none !important;
 }
+
+body.light-mode .move-result.hit {
+  background: rgba(31, 163, 91, 0.16);
+  color: var(--success);
+}
+
+body.light-mode .move-result.miss {
+  background: rgba(214, 69, 69, 0.16);
+  color: var(--danger);
+}
