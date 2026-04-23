@@ -1422,3 +1422,10 @@ body.light-mode .server-option {
   font-weight:800;
   border:1px solid rgba(80,180,255,.35);
 }
+
+.card-title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin: 0 0 18px 0;
+  line-height: 1.2;
+}
