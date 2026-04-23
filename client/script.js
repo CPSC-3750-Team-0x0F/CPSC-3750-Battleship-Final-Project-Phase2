@@ -278,11 +278,6 @@ async function loadCareerStats() {
   }
 }
 
-  clearLiveGameStats();
-  showLanding();
-  loadAvailableGames();
-}
-
 async function loadLiveGameStats() {
   if (!currentPlayerId || !currentGameId || !SERVER_BASE) return null;
 
