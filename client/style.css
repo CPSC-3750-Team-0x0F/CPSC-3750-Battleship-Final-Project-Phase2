@@ -179,13 +179,19 @@ body::after {
   font-size: 0.95rem;
 }
 
+/* Fix the theme button */
 .theme-toggle {
-  position: fixed;
-  top: 24px;
-  left: 24px;
-
-  height: 42px;
-  z-index: 1100;
+  position: relative; /* Change from fixed to relative */
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--panel-strong);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
 }
 
 .hidden {
@@ -1544,29 +1550,21 @@ body.light-mode .clear-server-btn:hover {
   line-height: 1.5;
 }
 
+/* Fix the help button */
 .help-toggle {
-  position: fixed;
-  top: 24px;          /* match theme button */
-  left: 170px;        /* adjust if needed */
-
-  width: 42px;
-  height: 42px;
-  padding: 0;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  border-radius: 12px;
+  position: relative; /* Change from fixed to relative */
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
   background: var(--panel-strong);
   color: var(--text-main);
   border: 1px solid var(--border);
-
   cursor: pointer;
   font-weight: 800;
-  font-size: 1.1rem;
-
-  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
 }
 
 /* Utility to hide/show */
@@ -1582,4 +1580,55 @@ body.light-mode .move-result.hit {
 body.light-mode .move-result.miss {
   background: rgba(214, 69, 69, 0.16);
   color: var(--danger);
+}
+
+/* Update the container to ensure they are side-by-side with a small gap */
+.top-left-controls {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 4px; /* Space between the two circles */
+  z-index: 2000;
+}
+
+/* Minimalist Circular Buttons */
+.icon-button {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--panel-strong);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  transition: all 0.2s ease;
+  overflow: hidden;
+  color: var(--text-main);
+  font-weight: bold;
+  font-size: 1.1rem;
+}
+
+.toggle-image {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  /* Remove any global filters here if they exist */
+}
+
+.icon-button:hover {
+  background: var(--secondary-hover);
+  border-color: var(--primary);
+}
+
+#themeIcon[src="sun.png"] {
+  filter: brightness(0) invert(1);
+}
+
+body.light-mode #themeIcon[src="moon.png"] {
+  filter: none; /* This ensures your gray moon stays exactly as the file is */
 }

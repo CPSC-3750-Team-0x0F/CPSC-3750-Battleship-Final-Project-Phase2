@@ -8,10 +8,12 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <button class="help-toggle" onclick="toggleHowToPlay()">?</button>
-  <button id="themeToggle" class="theme-toggle" onclick="toggleTheme()">
-    Light Mode
+  <div class="top-left-controls">
+  <button class="icon-button help-toggle" onclick="toggleHowToPlay()">?</button>
+  <button id="themeToggle" class="icon-button theme-toggle" onclick="toggleTheme()">
+    <img id="themeIcon" src="sun.png" alt="Theme Icon" class="toggle-image">
   </button>
+</div>
 
   <div id="userProfile" class="user-profile hidden">
     <img src="avatar.png" alt="User Avatar" class="avatar-circle">

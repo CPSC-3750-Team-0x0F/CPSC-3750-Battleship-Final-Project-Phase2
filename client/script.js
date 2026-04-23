@@ -1082,14 +1082,16 @@ async function loadResultStats() {
 
 function applyTheme(theme) {
   const body = document.body;
-  const toggleBtn = document.getElementById("themeToggle");
+  const themeImg = document.getElementById("themeIcon");
 
   if (theme === "light") {
     body.classList.add("light-mode");
-    if (toggleBtn) toggleBtn.textContent = "Dark Mode";
+    // Show moon icon when in light mode (to suggest switching to dark)
+    if (themeImg) themeImg.src = "moon.png";
   } else {
     body.classList.remove("light-mode");
-    if (toggleBtn) toggleBtn.textContent = "Light Mode";
+    // Show sun icon when in dark mode
+    if (themeImg) themeImg.src = "sun.png";
   }
 
   localStorage.setItem("theme", theme);
