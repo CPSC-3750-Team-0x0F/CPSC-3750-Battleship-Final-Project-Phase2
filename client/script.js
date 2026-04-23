@@ -626,10 +626,6 @@ async function joinGame() {
   }
 }
 
-function playBot() {
-  setStatus("Bot mode coming soon...");
-}
-
 function buildBoard(elementId, clickable = false, onCellClick = null) {
   const board = document.getElementById(elementId);
   board.innerHTML = "";
