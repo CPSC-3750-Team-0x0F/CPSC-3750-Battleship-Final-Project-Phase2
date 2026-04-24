@@ -1632,8 +1632,9 @@ body:not(.light-mode) .connection-toggle .toggle-image {
 
 /* Placed ships in light mode (Darker gray/blue for contrast) */
 body.light-mode .cell.ship {
-  background-color: #334155 !important;
-  border-color: #1e293b;
+  background-color: #1d4ed8 !important;
+  border-color: #1e3a8a;
+  box-shadow: inset 0 0 0 2px rgba(30,58,138,.35);
 }
 
 /* Hit state (Slightly darker green for light background) */
@@ -1648,10 +1649,9 @@ body.light-mode .cell.miss {
   border-color: #c0392b;
 }
 
-/* Pending/Placement state */
 body.light-mode .cell.pending-ship {
-  background-color: #64748b !important;
-  border-color: #475569;
+  background-color: #f59e0b !important;
+  border-color: #92400e;
 }
 
 /* FIX: Turn Indicator Text Color */
