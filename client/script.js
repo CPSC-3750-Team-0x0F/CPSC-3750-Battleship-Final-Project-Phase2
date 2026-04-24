@@ -299,59 +299,34 @@ async function loadLiveGameStats() {
 
 async function connectToServer() {
   const input = document.getElementById("serverUrl").value.trim();
-  const usernameInput = document.getElementById("username").value.trim();
 
   if (!input) {
     setServerStatus("Please enter a server URL.", "error");
     return;
   }
 
+  setServerStatus("Checking connection...");
+
   const cleaned = input.replace(/\/+$/, "");
 
   try {
-    const testRes = await fetch(`${cleaned}/api`);
-    if (!testRes.ok) throw new Error("Server unreachable");
+     const testRes = await fetch(`${cleaned}/api`);
+     if (!testRes.ok) throw new Error("Connection failed");
 
-    SERVER_BASE = cleaned;
+     SERVER_BASE = cleaned;
 
-    const panel = document.getElementById("serverListPanel");
-    if (panel) panel.classList.add("hidden");
+     localStorage.setItem("battleship_server_url", SERVER_BASE);
 
-    localStorage.setItem("battleship_server_url", SERVER_BASE);
+     updateServerDisplay();
+     setServerStatus("Connected ✓", "success");
 
-    updateServerDisplay();
-    setServerStatus("Connected to server", "success");
-    loadAvailableGames();
+     loadAvailableGames();
 
-    // If the user already typed a username, log them in and load career stats
-    if (usernameInput) {
-      const regRes = await fetch(`${cleaned}/api/players`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username: usernameInput })
-      });
-
-      const data = await regRes.json();
-
-      if (!regRes.ok) {
-        throw new Error(data.message || "Failed to load player account");
-      }
-
-      currentPlayerId = Number(data.player_id);
-      currentUsername = data.username || usernameInput;
-
-      localStorage.setItem(STORAGE_KEYS.username, currentUsername);
-      localStorage.setItem(STORAGE_KEYS.playerId, currentPlayerId);
-
-      showAccountHeader(currentUsername);
-      await loadCareerStats();
-
-      setServerStatus(`Connected as ${currentUsername}`, "success");
-    }
-  } catch (err) {
-    setServerStatus(err.message || "Failed to connect", "error");
+  } catch(err) {
+     setServerStatus("Connection failed", "error");
   }
 }
+
 function clearGameSessionStorage() {
   localStorage.removeItem(STORAGE_KEYS.username);
   localStorage.removeItem(STORAGE_KEYS.playerId);
