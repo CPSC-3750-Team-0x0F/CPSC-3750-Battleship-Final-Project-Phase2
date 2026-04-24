@@ -202,44 +202,67 @@
         </div>
       </div>
 
-      <div class="boards">
-        <div class="board-panel">
-          <h2 id="yourBoardLabel">Your Board</h2>
-          <p id="placementHelp" class="board-help hidden">Click 3 cells to place your ships.</p>
-          <div id="playerBoard" class="board"></div>
-        </div>
+<div class="boards">
 
-        <div class="board-panel">
-          <h2 id="enemyBoardLabel">Opponent Board</h2>
-          <p class="board-help">Green = hit, Red = miss</p>
-          <div id="enemyBoard" class="board"></div>
-        </div>
-      </div>
-
-      <div class="history-panel">
-        <div class="history-header">
-          <h2>Move History</h2>
-          <button class="secondary-btn" onclick="refreshGameState()">Refresh History</button>
-        </div>
-        <div id="moveHistoryList" class="move-history-list">
-          <p class="empty-history">No moves yet.</p>
-        </div>
-      </div>
-
-      <div class="game-actions">
-        <button id="startPlacementBtn" class="hidden" onclick="enablePlacementMode()">
-          Start Ship Placement
-        </button>
-        <button id="submitPlacementBtn" class="hidden" onclick="submitPlacedShips()">
-          Confirm Placement
-        </button>
-        <button id="clearPlacementBtn" class="hidden secondary-btn" onclick="clearPlacementSelection()">
-          Clear Selection
-        </button>
-        <button class="secondary-btn" onclick="refreshGameState()">Refresh Game</button>
-      </div>
-    </section>
+  <div class="board-panel">
+    <h2 id="yourBoardLabel">Your Board</h2>
+    <p id="placementHelp" class="board-help hidden">
+      Click 3 cells to place your ships.
+    </p>
+    <div id="playerBoard" class="board"></div>
   </div>
+
+  <div class="board-panel">
+    <h2 id="enemyBoardLabel">Opponent Board</h2>
+    <p class="board-help">Green = hit, Red = miss</p>
+    <div id="enemyBoard" class="board"></div>
+  </div>
+
+  <div class="sidebar-panel">
+
+    <div class="history-panel">
+      <div class="history-header">
+        <h2>Move History</h2>
+        <button class="secondary-btn" onclick="refreshGameState()">
+          Refresh History
+        </button>
+      </div>
+
+      <div id="moveHistoryList" class="move-history-list">
+        <p class="empty-history">No moves yet.</p>
+      </div>
+    </div>
+
+    <div class="game-actions">
+      <button id="startPlacementBtn"
+              class="hidden"
+              onclick="enablePlacementMode()">
+        Start Ship Placement
+      </button>
+
+      <button id="submitPlacementBtn"
+              class="hidden"
+              onclick="submitPlacedShips()">
+        Confirm Placement
+      </button>
+
+      <button id="clearPlacementBtn"
+              class="hidden secondary-btn"
+              onclick="clearPlacementSelection()">
+        Clear Selection
+      </button>
+
+      <button class="secondary-btn"
+              onclick="refreshGameState()">
+        Refresh Game
+      </button>
+    </div>
+
+  </div>
+
+</div>
+</section>
+</div>
 
   <div id="createGameModal" class="modal hidden">
     <div class="modal-card">

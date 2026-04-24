@@ -396,10 +396,10 @@ body.light-mode .turn-badge.active {
 
 .boards {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 28px;
+  grid-template-columns: 1fr 1fr 320px;
+  gap: 24px;
+  align-items: start;
 }
-
 .board-panel {
   border-radius: var(--radius-lg);
   padding: 22px;
@@ -428,6 +428,20 @@ body.light-mode .turn-badge.active {
   display: grid;
   gap: 5px;
   justify-content: center;
+}
+
+.history-panel {
+  margin-top: 0;
+  height: fit-content;
+}
+
+.move-history-list {
+  max-height: 420px;
+}
+
+.game-actions {
+  margin-top: 16px;
+  flex-direction: column;
 }
 
 .cell {
@@ -1660,4 +1674,29 @@ body.light-mode .turn-badge.active {
   background-color: var(--primary) !important;
   color: #ffffff !important; 
   box-shadow: 0 4px 12px rgba(47, 128, 237, 0.3);
+}
+
+.sidebar-panel{
+display:flex;
+flex-direction:column;
+gap:18px;
+}
+
+.boards{
+display:grid;
+grid-template-columns:1fr 1fr 320px;
+gap:24px;
+align-items:start;
+}
+
+.history-panel{
+margin-top:0;
+}
+
+.move-history-list{
+max-height:420px;
+}
+
+.game-actions{
+flex-direction:column;
 }
