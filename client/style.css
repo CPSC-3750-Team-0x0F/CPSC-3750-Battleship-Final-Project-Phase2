@@ -1129,8 +1129,7 @@ body.light-mode .secondary-btn:hover {
 body.light-mode .card,
 body.light-mode .board-panel,
 body.light-mode .modal-card,
-body.light-mode .server-panel,
-body.light-mode .history-panel {
+body.light-mode .server-panel {
   background: rgba(255, 255, 255, 0.94);
   color: var(--text-main);
 }
@@ -1152,6 +1151,10 @@ body.light-mode select {
   background: rgba(16, 32, 48, 0.04);
   color: var(--text-main);
   border: 1px solid var(--border);
+}
+
+body.light-mode .history-panel::before{
+  display:none;
 }
 
 body.light-mode input::placeholder {
