@@ -1085,6 +1085,42 @@ async function fireShot(row, col) {
   }
 }
 
+function confirmForfeitMatch() {
+  const confirmed = confirm(
+    "Are you sure you want to leave this match? This will count as a loss."
+  );
+
+  if (!confirmed) return;
+
+  forfeitMatch();
+}
+
+async function forfeitMatch() {
+  if (!currentGameId || !currentPlayerId || !SERVER_BASE) {
+    goHome();
+    return;
+  }
+
+  try {
+    const res = await fetch(`${getApiBase()}/games/${currentGameId}/forfeit`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ player_id: currentPlayerId })
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data.message || data.error || "Could not forfeit match");
+    }
+
+    setStatus("You forfeited the match.");
+    goHome();
+  } catch (err) {
+    document.getElementById("gameStatusOnly").textContent = err.message;
+  }
+}
+
 async function showGameResult(winnerId) {
   if (winnerId == null) return;
 

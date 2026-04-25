@@ -210,6 +210,7 @@ await client.query(
   }
 };
 
+
 /**
  * Handles GET /api/games/:id
  */
@@ -295,5 +296,59 @@ exports.getGame = async (req, res) => {
       error: "server_error",
       message: "internal database error"
     });
+  }
+};
+
+exports.forfeitGame = async (req, res) => {
+  const { id } = req.params;
+  const { player_id } = req.body || {};
+
+  if (!isStrictInt(id) || !isStrictInt(player_id)) {
+    return res.status(400).json({ error: "bad_request", message: "invalid request" });
+  }
+
+  const gameId = Number(id);
+  const loserId = Number(player_id);
+
+  try {
+    const playersRes = await db.query(
+      `
+      SELECT player_id
+      FROM game_players
+      WHERE game_id = $1 AND player_id != $2
+      LIMIT 1
+      `,
+      [gameId, loserId]
+    );
+
+    if (playersRes.rows.length === 0) {
+      return res.status(400).json({
+        error: "bad_request",
+        message: "No opponent found"
+      });
+    }
+
+    const winnerId = Number(playersRes.rows[0].player_id);
+
+    await db.query(
+      `
+      UPDATE games
+      SET status = 'finished', winner_id = $1
+      WHERE game_id = $2
+      `,
+      [winnerId, gameId]
+    );
+
+    await db.query("UPDATE players SET wins = wins + 1 WHERE player_id = $1", [winnerId]);
+    await db.query("UPDATE players SET losses = losses + 1 WHERE player_id = $1", [loserId]);
+
+    return res.status(200).json({
+      status: "forfeited",
+      winner_id: winnerId,
+      loser_id: loserId
+    });
+  } catch (err) {
+    console.error("forfeitGame error:", err);
+    return res.status(500).json({ error: "server_error" });
   }
 };
