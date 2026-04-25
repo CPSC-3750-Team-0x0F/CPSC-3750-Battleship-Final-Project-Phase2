@@ -1670,19 +1670,23 @@ body.light-mode .turn-badge.active {
   box-shadow: 0 4px 12px rgba(47, 128, 237, 0.3);
 }
 
-.sidebar-panel{
-display:flex;
-flex-direction:column;
-margin-left:20px;
-gap:18px;
-}
-
 .boards{
   display:grid;
-  grid-template-columns:min-content min-content 320px;
+  grid-template-columns:min-content min-content;
   justify-content:center;
   column-gap:48px;
   align-items:start;
+  position:relative;
+}
+
+.sidebar-panel{
+  position:absolute;
+  left:calc(100% + 36px);
+  top:0;
+  width:320px;
+  display:flex;
+  flex-direction:column;
+  gap:18px;
 }
 
 .history-panel{
