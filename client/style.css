@@ -1136,8 +1136,7 @@ body.light-mode .server-panel {
 
 body.light-mode .card::before,
 body.light-mode .modal-card::before,
-body.light-mode .server-panel::before,
-body.light-mode .history-panel::before {
+body.light-mode .server-panel::before {
   background: linear-gradient(
     180deg,
     rgba(255, 255, 255, 0.55) 0%,
