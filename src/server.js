@@ -1,6 +1,7 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const path = require("path");
+const cors = require("cors");
 const db = require("./db");
 
 const playerRoutes = require("./routes/playerRoutes");
@@ -9,6 +10,29 @@ const moveRoutes = require("./routes/moveRoutes");
 const testRoutes = require("./routes/testRoutes");
 
 const app = express();
+
+const allowedOrigins = [
+  'https://christianjohnston.dev',
+  'https://anthonyfrialde.dev',
+  'http://localhost:5500',
+  'http://127.0.0.1:5500'
+];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      console.log("Blocked by CORS:", origin);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true
+}));
+
 app.use(bodyParser.json());
 
 /* ---------------- STATIC FRONTEND ---------------- */
