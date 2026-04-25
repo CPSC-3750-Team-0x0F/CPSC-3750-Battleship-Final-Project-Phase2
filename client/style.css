@@ -394,12 +394,6 @@ body.light-mode .turn-badge.active {
   box-shadow: 0 4px 12px rgba(47, 128, 237, 0.2);
 }
 
-.boards {
-  display: grid;
-  grid-template-columns: 1fr 1fr 320px;
-  gap: 24px;
-  align-items: start;
-}
 .board-panel {
   border-radius: var(--radius-lg);
   padding: 22px;
@@ -1679,14 +1673,16 @@ body.light-mode .turn-badge.active {
 .sidebar-panel{
 display:flex;
 flex-direction:column;
+margin-left:20px;
 gap:18px;
 }
 
 .boards{
-display:grid;
-grid-template-columns:1fr 1fr 320px;
-gap:24px;
-align-items:start;
+  display:grid;
+  grid-template-columns:min-content min-content 320px;
+  justify-content:center;
+  column-gap:48px;
+  align-items:start;
 }
 
 .history-panel{
