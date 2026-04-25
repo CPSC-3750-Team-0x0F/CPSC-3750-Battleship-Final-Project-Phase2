@@ -41,6 +41,7 @@ app.use(bodyParser.json());
 
 /* ---------------- STATIC FRONTEND ---------------- */
 const clientPath = path.join(process.cwd(), "client");
+app.use("/projects/Ship-Sinkers-Phase-2", express.static(clientPath));
 app.use(express.static(clientPath));
 
 /* ---------------- API ROUTES ---------------- */
