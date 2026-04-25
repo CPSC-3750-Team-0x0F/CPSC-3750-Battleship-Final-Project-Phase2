@@ -1777,3 +1777,23 @@ body.light-mode .ship-choice.active{
   opacity: 0.55;
   cursor: not-allowed;
 }
+
+body.light-mode .history-panel {
+  background: #ffffff !important;
+  border: 1px solid rgba(16, 32, 48, 0.12) !important;
+  box-shadow: 0 8px 20px rgba(20, 40, 70, 0.10) !important;
+}
+
+body.light-mode .history-panel::before {
+  display: none !important;
+  background: none !important;
+}
+
+body.light-mode .move-history-list {
+  background: transparent !important;
+}
+
+body.light-mode .move-history-item {
+  background: #eef3f8 !important;
+  border: 1px solid rgba(16, 32, 48, 0.10) !important;
+}
