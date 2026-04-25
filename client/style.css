@@ -1191,7 +1191,7 @@ body.light-mode .cell.pending-ship {
 body.light-mode .move-history-item,
 body.light-mode .game-list-item,
 body.light-mode .result-stat-card {
-  background: rgba(16, 32, 48, 0.04);
+  background: #eef3f8;
   border: 1px solid rgba(16, 32, 48, 0.08);
 }
 
