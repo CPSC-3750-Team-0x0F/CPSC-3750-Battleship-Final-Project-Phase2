@@ -11,6 +11,11 @@ let pollInterval = null;
 let placementMode = false;
 let pendingShips = [];
 
+const SHIP_LOADOUT = [5, 4, 3];
+let selectedShipIndex = 0;
+let shipDirection = "horizontal";
+let placedShipIndexes = new Set();
+
 const STORAGE_KEYS = {
   username: "battleship_username",
   playerId: "battleship_player_id",
@@ -821,35 +826,111 @@ function updateTurnBadges(currentTurnIndex, status) {
   }
 }
 
+function updateShipSelectorUI() {
+  document.querySelectorAll(".ship-choice").forEach((btn, index) => {
+    btn.classList.toggle("active", index === selectedShipIndex);
+    btn.disabled = placedShipIndexes.has(index);
+  });
+
+  const text = document.getElementById("shipPlacementText");
+  if (text) {
+    text.textContent = `Selected: ${SHIP_LOADOUT[selectedShipIndex]} x 1 (${shipDirection})`;
+  }
+}
+
+function selectShipToPlace(index) {
+  if (placedShipIndexes.has(index)) return;
+  selectedShipIndex = index;
+  updateShipSelectorUI();
+}
+
+function rotateShipPlacement() {
+  shipDirection = shipDirection === "horizontal" ? "vertical" : "horizontal";
+  updateShipSelectorUI();
+}
+
 function enablePlacementMode() {
   placementMode = true;
   pendingShips = [];
+  placedShipIndexes = new Set();
+  selectedShipIndex = 0;
+  shipDirection = "horizontal";
+
+  document.getElementById("shipSelectorPanel").classList.remove("hidden");
+
+  updateShipSelectorUI();
   renderBoards();
 }
 
 function clearPlacementSelection() {
   pendingShips = [];
+  placedShipIndexes = new Set();
+  selectedShipIndex = 0;
+  shipDirection = "horizontal";
+
+  updateShipSelectorUI();
   renderBoards();
 }
 
 function togglePendingShip(row, col) {
-  const existingIndex = pendingShips.findIndex((s) => s.row === row && s.col === col);
+  const shipLength = SHIP_LOADOUT[selectedShipIndex];
 
-  if (existingIndex >= 0) {
-    pendingShips.splice(existingIndex, 1);
-  } else {
-    if (pendingShips.length >= 3) return;
-    pendingShips.push({ row, col });
+  if (placedShipIndexes.has(selectedShipIndex)) return;
+
+  const newCells = [];
+
+  for (let i = 0; i < shipLength; i++) {
+    const shipRow = shipDirection === "vertical" ? row + i : row;
+    const shipCol = shipDirection === "horizontal" ? col + i : col;
+
+    if (
+      shipRow < 0 ||
+      shipRow >= currentGridSize ||
+      shipCol < 0 ||
+      shipCol >= currentGridSize
+    ) {
+      document.getElementById("gameStatusOnly").textContent =
+        "Ship does not fit there.";
+      return;
+    }
+
+    const overlaps = pendingShips.some(
+      (s) => Number(s.row) === shipRow && Number(s.col) === shipCol
+    );
+
+    if (overlaps) {
+      document.getElementById("gameStatusOnly").textContent =
+        "Ships cannot overlap.";
+      return;
+    }
+
+    newCells.push({
+      row: shipRow,
+      col: shipCol,
+      ship_size: shipLength
+    });
   }
 
+  pendingShips.push(...newCells);
+  placedShipIndexes.add(selectedShipIndex);
+
+  const nextIndex = SHIP_LOADOUT.findIndex((_, index) => !placedShipIndexes.has(index));
+  if (nextIndex !== -1) {
+    selectedShipIndex = nextIndex;
+  }
+
+  updateShipSelectorUI();
   renderBoards();
 }
 
 async function submitPlacedShips() {
   if (!currentGameId || !currentPlayerId || !SERVER_BASE) return;
 
-  if (pendingShips.length !== 3) {
-    document.getElementById("gameStatusOnly").textContent = "Select exactly 3 ship cells.";
+  const totalShipCells = SHIP_LOADOUT.reduce((sum, size) => sum + size, 0);
+
+  if (pendingShips.length !== totalShipCells) {
+    document.getElementById("gameStatusOnly").textContent =
+      `Place all ships first. Selected ${pendingShips.length}/${totalShipCells} cells.`;
     return;
   }
 
@@ -872,9 +953,13 @@ async function submitPlacedShips() {
     savePlacedShips(pendingShips);
     placementMode = false;
     pendingShips = [];
+    placedShipIndexes = new Set();
+
+    document.getElementById("shipSelectorPanel").classList.add("hidden");
 
     document.getElementById("gameStatusOnly").textContent =
       "Ships placed. Waiting for the other player...";
+
     await refreshGameState();
   } catch (err) {
     document.getElementById("gameStatusOnly").textContent = err.message;

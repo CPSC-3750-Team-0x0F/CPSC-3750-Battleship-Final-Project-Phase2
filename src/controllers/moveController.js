@@ -12,10 +12,12 @@ exports.placeShips = async (req, res) => {
     return res.status(400).json({ error: "bad_request", message: "invalid request" });
   }
 
-  if (ships.length !== 3) {
+  const REQUIRED_SHIP_CELLS = 12;
+
+  if (ships.length !== REQUIRED_SHIP_CELLS) {
     return res.status(400).json({
       error: "bad_request",
-      message: "You must place exactly 3 ships"
+      message: "You must place all ships (12 cells total)"
     });
   }
 
@@ -57,7 +59,14 @@ exports.placeShips = async (req, res) => {
     }
 
     for (const ship of ships) {
-      if (ship.row < 0 || ship.row >= grid_size || ship.col < 0 || ship.col >= grid_size) {
+      if (
+        !isStrictInt(ship.row) ||
+        !isStrictInt(ship.col) ||
+        ship.row < 0 ||
+        ship.row >= grid_size ||
+        ship.col < 0 ||
+        ship.col >= grid_size
+      ) {
         await client.query("ROLLBACK");
         return res.status(400).json({
           error: "bad_request",
@@ -90,6 +99,7 @@ exports.placeShips = async (req, res) => {
       "SELECT COUNT(*)::int FROM game_players WHERE game_id = $1",
       [gameId]
     );
+
     const readyCountRes = await client.query(
       "SELECT COUNT(DISTINCT player_id)::int FROM ships WHERE game_id = $1",
       [gameId]

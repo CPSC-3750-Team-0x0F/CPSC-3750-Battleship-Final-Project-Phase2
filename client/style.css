@@ -1700,3 +1700,58 @@ max-height:420px;
 .game-actions{
 flex-direction:column;
 }
+
+.ship-selector-panel{
+  position:absolute;
+  right:calc(100% + 36px);
+  top:0;
+  width:170px;
+
+  padding:18px;
+  border-radius:16px;
+
+  background:var(--panel);
+  border:1px solid var(--border);
+  box-shadow:var(--shadow-md);
+
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+
+.ship-selector-panel h3{
+  margin:0 0 8px;
+  text-align:center;
+}
+
+.ship-choice{
+  width:100%;
+  background:var(--secondary);
+}
+
+.ship-choice.active{
+  background:var(--primary);
+}
+
+#shipPlacementText{
+  margin-top:6px;
+  text-align:center;
+  font-size:.9rem;
+  color:var(--text-soft);
+}
+
+/* light mode support */
+body.light-mode .ship-selector-panel{
+  background:rgba(255,255,255,.96);
+  border:1px solid var(--border);
+}
+
+body.light-mode .ship-choice{
+  background:#d9e6f2;
+  color:var(--text-main);
+}
+
+body.light-mode .ship-choice.active{
+  background:var(--primary);
+  color:white;
+}
