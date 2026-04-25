@@ -815,7 +815,6 @@ function renderGameInfo(game) {
 
   document.getElementById("submitPlacementBtn").classList.toggle("hidden", !placementMode);
   document.getElementById("clearPlacementBtn").classList.toggle("hidden", !placementMode);
-  document.getElementById("placementHelp").classList.toggle("hidden", !placementMode);
 
   updateTurnBadges(currentTurnIndex, status);
 }
@@ -1032,7 +1031,6 @@ async function submitPlacedShips() {
     document.getElementById("shipSelectorPanel").classList.add("hidden");
     document.getElementById("submitPlacementBtn").classList.add("hidden");
     document.getElementById("clearPlacementBtn").classList.add("hidden");
-    document.getElementById("placementHelp").classList.add("hidden");
 
     document.getElementById("gameStatusOnly").textContent =
       "Ships placed. Waiting for the other player...";
