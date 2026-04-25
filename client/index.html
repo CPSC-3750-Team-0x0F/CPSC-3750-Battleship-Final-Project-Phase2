@@ -148,6 +148,9 @@
             <button onclick="openCreateGameModal()">Create Game</button>
             <button onclick="joinGame()">Join Game</button>
           </div>
+
+          <div id="status" class="status-text"></div>
+
         </div>
 
         <div class="card available-games-card">
@@ -162,7 +165,6 @@
         </div>
       </div>
 
-      <div id="status" class="status-text"></div>
     </section>
 
     <section id="gameView" class="hidden">
@@ -304,7 +306,7 @@
       </select>
 
       <label for="shipCountDisplay">Ships</label>
-      <input id="shipCountDisplay" type="text" value="3 ships (backend rule)" disabled />
+      <input id="shipCountDisplay" type="text" value="3 ships (5x1, 4x1, 3x1)" disabled />
 
       <div class="modal-actions">
         <button onclick="createGameFromModal()">Create</button>
