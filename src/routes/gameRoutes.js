@@ -15,6 +15,6 @@ router.post("/:id/join", gameController.joinGame);
 router.get("/:id", gameController.getGame);
 
 // Forfeit the match
-router.post("/games/:id/forfeit", gameController.forfeitGame);
+router.post("/:id/forfeit", gameController.forfeitGame);
 
 module.exports = router;

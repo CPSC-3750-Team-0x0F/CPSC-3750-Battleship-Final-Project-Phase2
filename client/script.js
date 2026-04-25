@@ -1108,7 +1108,14 @@ async function forfeitMatch() {
       body: JSON.stringify({ player_id: currentPlayerId })
     });
 
-    const data = await res.json();
+    const text = await res.text();
+    let data = {};
+
+    try {
+      data = JSON.parse(text);
+    } catch {
+      throw new Error(text || "Server returned non-JSON response");
+    }
 
     if (!res.ok) {
       throw new Error(data.message || data.error || "Could not forfeit match");
