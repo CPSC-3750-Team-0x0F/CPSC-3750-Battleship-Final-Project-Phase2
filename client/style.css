@@ -1136,7 +1136,6 @@ body.light-mode .history-panel {
 }
 
 body.light-mode .card::before,
-body.light-mode .board-panel::before,
 body.light-mode .modal-card::before,
 body.light-mode .server-panel::before,
 body.light-mode .history-panel::before {
@@ -1145,6 +1144,10 @@ body.light-mode .history-panel::before {
     rgba(255, 255, 255, 0.55) 0%,
     rgba(255, 255, 255, 0) 30%
   );
+}
+
+body.light-mode .board-panel::before{
+  display:none;
 }
 
 body.light-mode input,
