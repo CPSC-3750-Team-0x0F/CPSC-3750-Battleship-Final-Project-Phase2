@@ -1121,13 +1121,18 @@ async function forfeitMatch() {
       throw new Error(data.message || data.error || "Could not forfeit match");
     }
 
-    setStatus("You forfeited the match.");
-    goHome();
+    currentGameData = {
+      ...(currentGameData || {}),
+      status: "finished",
+      winner_id: data.winner_id,
+      ended_by_forfeit: true
+    };
+
+    showGameResult(data.winner_id);
   } catch (err) {
     document.getElementById("gameStatusOnly").textContent = err.message;
   }
 }
-
 async function showGameResult(winnerId) {
   if (winnerId == null) return;
 
@@ -1137,14 +1142,18 @@ async function showGameResult(winnerId) {
   const victoryMsg = document.getElementById("victoryMessage");
   const defeatMsg = document.getElementById("defeatMessage");
   const statsBox = document.getElementById("resultStats");
-
-  const isWinner = Number(winnerId) === Number(currentPlayerId);
   const victorySubtitle = document.getElementById("victorySubtitle");
 
+  const isWinner = Number(winnerId) === Number(currentPlayerId);
+
   if (victorySubtitle) {
-    victorySubtitle.textContent = currentGameData?.ended_by_forfeit
-      ? "Opponent forfeited"
-      : "Enemy fleet neutralized";
+    if (currentGameData?.ended_by_forfeit && isWinner) {
+      victorySubtitle.textContent = "Opponent forfeited";
+    } else if (currentGameData?.ended_by_forfeit && !isWinner) {
+      victorySubtitle.textContent = "You forfeited";
+    } else {
+      victorySubtitle.textContent = "Enemy fleet neutralized";
+    }
   }
 
   if (isWinner) {
