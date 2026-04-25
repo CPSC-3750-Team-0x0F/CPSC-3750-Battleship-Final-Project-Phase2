@@ -778,6 +778,10 @@ function renderGameInfo(game) {
   const maxPlayers = Number(game.max_players || 0);
   const currentTurnIndex = Number(game.current_turn_index ?? -1);
 
+  const totalShipCells = SHIP_LOADOUT.reduce((sum, size) => sum + size, 0);
+  const placed = loadPlacedShips();
+  const hasPlaced = placed.length === totalShipCells;
+
   document.getElementById("yourBoardLabel").textContent = `${currentUsername}'s Board`;
   document.getElementById("enemyBoardLabel").textContent = "Opponent Board";
 
@@ -785,9 +789,11 @@ function renderGameInfo(game) {
 
   if ((status === "waiting_setup" || status === "waiting") && activePlayers < maxPlayers) {
     message = "Waiting for another player to join...";
-  } else if ((status === "waiting_setup" || status === "waiting" || status === "active") && activePlayers === maxPlayers) {
-    const placed = loadPlacedShips();
-    message = placed.length === 3
+  } else if (
+    (status === "waiting_setup" || status === "waiting" || status === "active") &&
+    activePlayers === maxPlayers
+  ) {
+    message = hasPlaced
       ? "Ships placed. Waiting for the other player..."
       : "Place your ships!";
   } else if (status === "playing") {
@@ -802,12 +808,11 @@ function renderGameInfo(game) {
     (status === "waiting_setup" || status === "waiting" || status === "active") &&
     activePlayers === maxPlayers;
 
-  const hasPlaced = loadPlacedShips().length === 3;
-
   document.getElementById("startPlacementBtn").classList.toggle(
     "hidden",
     !canPlaceNow || hasPlaced || placementMode
   );
+
   document.getElementById("submitPlacementBtn").classList.toggle("hidden", !placementMode);
   document.getElementById("clearPlacementBtn").classList.toggle("hidden", !placementMode);
   document.getElementById("placementHelp").classList.toggle("hidden", !placementMode);
