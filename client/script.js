@@ -1139,6 +1139,13 @@ async function showGameResult(winnerId) {
   const statsBox = document.getElementById("resultStats");
 
   const isWinner = Number(winnerId) === Number(currentPlayerId);
+  const victorySubtitle = document.getElementById("victorySubtitle");
+
+  if (victorySubtitle) {
+    victorySubtitle.textContent = currentGameData?.ended_by_forfeit
+      ? "Opponent forfeited"
+      : "Enemy fleet neutralized";
+  }
 
   if (isWinner) {
     victoryMsg.classList.remove("hidden");
