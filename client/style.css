@@ -1638,6 +1638,11 @@ body:not(.light-mode) .connection-toggle .toggle-image {
 
 /* --- Light Mode Overrides for Game States --- */
 
+body.light-mode .cell{
+  background:#cbd5e1;
+  border-color:rgba(16,32,48,.18);
+}
+
 /* Placed ships in light mode (Darker gray/blue for contrast) */
 body.light-mode .cell.ship {
   background-color: #1d4ed8 !important;
