@@ -667,6 +667,11 @@ function buildBoard(elementId, clickable = false, onCellClick = null) {
     if (clickable && onCellClick) {
       cell.classList.add(elementId === "enemyBoard" ? "targetable" : "placeable");
       cell.addEventListener("click", () => onCellClick(row, col));
+
+      if (elementId === "playerBoard") {
+        cell.addEventListener("mouseenter", () => showShipPreview(row, col));
+        cell.addEventListener("mouseleave", clearShipPreview);
+      }
     }
 
     board.appendChild(cell);
@@ -846,6 +851,7 @@ function selectShipToPlace(index) {
 
 function rotateShipPlacement() {
   shipDirection = shipDirection === "horizontal" ? "vertical" : "horizontal";
+  clearShipPreview();
   updateShipSelectorUI();
 }
 
@@ -872,7 +878,65 @@ function clearPlacementSelection() {
   renderBoards();
 }
 
+function getPreviewCells(row, col) {
+  const shipLength = SHIP_LOADOUT[selectedShipIndex];
+  const cells = [];
+
+  for (let i = 0; i < shipLength; i++) {
+    const shipRow = shipDirection === "vertical" ? row + i : row;
+    const shipCol = shipDirection === "horizontal" ? col + i : col;
+
+    cells.push({ row: shipRow, col: shipCol });
+  }
+
+  return cells;
+}
+
+function isValidShipPlacement(cells) {
+  return cells.every((cell) => {
+    const inBounds =
+      cell.row >= 0 &&
+      cell.row < currentGridSize &&
+      cell.col >= 0 &&
+      cell.col < currentGridSize;
+
+    const overlaps = pendingShips.some(
+      (s) => Number(s.row) === cell.row && Number(s.col) === cell.col
+    );
+
+    return inBounds && !overlaps;
+  });
+}
+
+function showShipPreview(row, col) {
+  if (!placementMode || placedShipIndexes.has(selectedShipIndex)) return;
+
+  clearShipPreview();
+
+  const cells = getPreviewCells(row, col);
+  const valid = isValidShipPlacement(cells);
+
+  cells.forEach((cell) => {
+    const el = getCell("playerBoard", cell.row, cell.col);
+    if (el) {
+      el.classList.add(valid ? "preview-valid" : "preview-invalid");
+    }
+  });
+}
+
+function clearShipPreview() {
+  document.querySelectorAll(".preview-valid, .preview-invalid").forEach((cell) => {
+    cell.classList.remove("preview-valid", "preview-invalid");
+  });
+}
+
 function togglePendingShip(row, col) {
+  if (placedShipIndexes.size === SHIP_LOADOUT.length) {
+    document.getElementById("gameStatusOnly").textContent =
+      "All ships placed. Click Confirm Placement.";
+    return;
+  }
+
   const shipLength = SHIP_LOADOUT[selectedShipIndex];
 
   if (placedShipIndexes.has(selectedShipIndex)) return;
@@ -915,8 +979,12 @@ function togglePendingShip(row, col) {
   placedShipIndexes.add(selectedShipIndex);
 
   const nextIndex = SHIP_LOADOUT.findIndex((_, index) => !placedShipIndexes.has(index));
+
   if (nextIndex !== -1) {
     selectedShipIndex = nextIndex;
+  } else {
+    document.getElementById("gameStatusOnly").textContent =
+      "All ships placed. Click Confirm Placement.";
   }
 
   updateShipSelectorUI();
@@ -951,11 +1019,15 @@ async function submitPlacedShips() {
     }
 
     savePlacedShips(pendingShips);
+
     placementMode = false;
     pendingShips = [];
     placedShipIndexes = new Set();
 
     document.getElementById("shipSelectorPanel").classList.add("hidden");
+    document.getElementById("submitPlacementBtn").classList.add("hidden");
+    document.getElementById("clearPlacementBtn").classList.add("hidden");
+    document.getElementById("placementHelp").classList.add("hidden");
 
     document.getElementById("gameStatusOnly").textContent =
       "Ships placed. Waiting for the other player...";
@@ -1311,3 +1383,11 @@ function updateTurnDisplay(status) {
     indicator.textContent = "OPPONENT'S TURN";
   }
 }
+
+document.addEventListener("keydown", (event) => {
+  if (!placementMode) return;
+
+  if (event.key.toLowerCase() === "r") {
+    rotateShipPlacement();
+  }
+});

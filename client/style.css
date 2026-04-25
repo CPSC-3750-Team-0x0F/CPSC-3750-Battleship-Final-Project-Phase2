@@ -1755,3 +1755,18 @@ body.light-mode .ship-choice.active{
   background:var(--primary);
   color:white;
 }
+
+.cell.preview-valid {
+  background: rgba(245, 158, 11, 0.8) !important;
+  border-color: #f59e0b !important;
+}
+
+.cell.preview-invalid {
+  background: rgba(239, 68, 68, 0.75) !important;
+  border-color: #ef4444 !important;
+}
+
+.ship-choice:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
