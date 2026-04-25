@@ -14,6 +14,8 @@ const app = express();
 const allowedOrigins = [
   'https://christianjohnston.dev',
   'https://anthonyfrialde.dev',
+  'https://www.christianjohnston.dev',
+  'https://www.anthonyfrialde.dev',
   'https://cpsc-3750-battleship-final-project-phase2-3zol.onrender.com',
   'https://cpsc-3750-battleship-final-project-phase2.onrender.com',
   'http://localhost:5500',

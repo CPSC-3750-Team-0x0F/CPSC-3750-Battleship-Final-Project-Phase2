@@ -1,4 +1,24 @@
-let SERVER_BASE = localStorage.getItem("battleship_server_url") || "https://cpsc-3750-battleship-final-project-phase2-3zol.onrender.com";
+/* ---------------- S.S. GPT DYNAMIC SERVER DETECTION ---------------- */
+const host = window.location.hostname;
+
+const TEAM_SERVERS = {
+    christian: "https://cpsc-3750-battleship-final-project-phase2-3zol.onrender.com",
+    anthony: "https://cpsc-3750-battleship-final-project-phase2.onrender.com"
+};
+
+// Default choice
+let default_choice = TEAM_SERVERS.christian;
+
+// If it's Anthony's site, swap to his server
+if (host.includes('anthonyfrialde')) {
+    default_choice = TEAM_SERVERS.anthony;
+} 
+// If it's your custom domain, it stays as christian
+else if (host.includes('christianjohnston.dev')) {
+    default_choice = TEAM_SERVERS.christian;
+}
+
+let SERVER_BASE = localStorage.getItem("battleship_server_url") || default_choice;
 
 let currentPlayerId = null;
 let currentGameId = null;
