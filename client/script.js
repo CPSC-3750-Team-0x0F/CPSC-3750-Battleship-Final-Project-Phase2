@@ -1553,18 +1553,11 @@ function changeSelectedOpponent() {
 }
 
 function updateOpponentDropdown(participants) {
-  console.log("Dropdown Check - All Participants:", participants); // Debug 1
-  console.log("Dropdown Check - My ID:", currentPlayerId); // Debug 2
   const select = document.getElementById("opponentSelect");
   if (!select) return;
 
-  // Ensure participants is a valid array
   const players = Array.isArray(participants) ? participants : [];
-
-  // Filter out yourself using a loose inequality to handle string/number mix
-  const opponents = players.filter(p => p.player_id != currentPlayerId);
-
-  console.log("Dropdown Check - Filtered Opponents:", opponents); // Debug 3
+  const opponents = players.filter(p => Number(p.player_id) !== Number(currentPlayerId));
 
   if (opponents.length === 0) {
     select.innerHTML = '<option value="">No targets available</option>';
@@ -1572,21 +1565,23 @@ function updateOpponentDropdown(participants) {
     return;
   }
 
-  // If no opponent is selected, or the currently selected one is gone/invalid, default to the first
-  const currentlySelectedExists = opponents.some(opp => opp.player_id == selectedOpponentId);
+  const currentlySelectedExists = opponents.some(opp => Number(opp.player_id) === Number(selectedOpponentId));
   if (!currentlySelectedExists) {
     selectedOpponentId = Number(opponents[0].player_id);
   }
 
-  // Map the opponents to HTML options
   const optionsHtml = opponents.map(opp => {
-    const isSelected = Number(opp.player_id) === selectedOpponentId;
-    return `<option value="${opp.player_id}" ${isSelected ? 'selected' : ''}>
-      ${opp.username} ${opp.is_eliminated ? '(SUNK)' : ''}
+    const oppId = Number(opp.player_id);
+    // Use the username if it exists, otherwise use "Player [ID]"
+    const displayName = opp.username || `Player ${oppId}`;
+    const isSelected = oppId === selectedOpponentId;
+    const sunkText = opp.is_eliminated ? ' (SUNK)' : '';
+
+    return `<option value="${oppId}" ${isSelected ? 'selected' : ''}>
+      ${displayName}${sunkText}
     </option>`;
   }).join("");
 
-  // Only update if content changed
   if (select.innerHTML !== optionsHtml) {
     select.innerHTML = optionsHtml;
   }
