@@ -572,7 +572,21 @@ async function createGameFromModal() {
 
   const username = document.getElementById("username").value.trim();
   const gridSize = Number(document.getElementById("gridSizeSelect").value);
-  const maxPlayers = Number(document.getElementById("maxPlayersSelect").value);
+  const maxPlayers = Number(document.getElementById("maxPlayersInput").value);
+
+  if (maxPlayers < 1) {
+	setStatus("Max players must be at least 1");
+	return;
+  }
+
+  if (maxPlayers > 100){
+	setStatus("Max players must be less than 100");
+	return;
+  }
+
+  if (!maxPlayers || maxPlayers < 1){
+	maxPlayers = 2;
+  }
 
   if (!username) {
     setStatus("Enter a username first");

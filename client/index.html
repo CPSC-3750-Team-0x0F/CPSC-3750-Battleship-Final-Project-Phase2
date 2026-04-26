@@ -298,10 +298,15 @@
         <option value="15">15 x 15</option>
       </select>
 
-      <label for="maxPlayersSelect">Max Players</label>
-      <select id="maxPlayersSelect">
-        <option value="2" selected>2 Players</option>
-      </select>
+      <label for="maxPlayersInput">Max Players</label>
+<input 
+  id="maxPlayersInput" 
+  type="number" 
+  min="1"
+  max="100"
+  value="2" 
+  placeholder="Enter number of players"
+>
 
       <label for="shipCountDisplay">Ships</label>
       <input id="shipCountDisplay" type="text" value="3 ships (5x1, 4x1, 3x1)" disabled />
