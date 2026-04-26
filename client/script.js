@@ -1553,6 +1553,8 @@ function changeSelectedOpponent() {
 }
 
 function updateOpponentDropdown(participants) {
+  console.log("Dropdown Check - All Participants:", participants); // Debug 1
+  console.log("Dropdown Check - My ID:", currentPlayerId); // Debug 2
   const select = document.getElementById("opponentSelect");
   if (!select) return;
 
@@ -1561,6 +1563,8 @@ function updateOpponentDropdown(participants) {
 
   // Filter out yourself using a loose inequality to handle string/number mix
   const opponents = players.filter(p => p.player_id != currentPlayerId);
+
+  console.log("Dropdown Check - Filtered Opponents:", opponents); // Debug 3
 
   if (opponents.length === 0) {
     select.innerHTML = '<option value="">No targets available</option>';
