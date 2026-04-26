@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <base href="/projects/Ship-Sinkers-Phase-2/"> <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <base href="/projects/Ship-Sinkers-Phase-2/">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Ship Sinkers</title>
   <link rel="icon" type="image/png" href="favicon.png">
   <link rel="stylesheet" href="style.css" />
@@ -21,331 +22,211 @@
   </button>
 </div>
 
-
-<!-- SERVER MODAL -->
 <div id="serverModal" class="modal-overlay hidden">
   <div class="modal-card">
     <button class="close-x" onclick="toggleServerModal()">×</button>
     <h2>Server Connection</h2>
 
     <div class="server-input-row">
-      <button type="button"
-              class="clear-server-btn"
-              onclick="clearServerInput()">
-        Clear
-      </button>
-
-      <input id="serverUrl"
-             type="text"
-             placeholder="Enter server URL">
+      <button type="button" class="clear-server-btn" onclick="clearServerInput()">Clear</button>
+      <input id="serverUrl" type="text" placeholder="Enter server URL">
     </div>
 
     <div class="server-actions">
       <button onclick="connectAndClose()">Connect</button>
-      <button class="secondary-btn"
-              onclick="toggleServerList()">
-        Server List
-      </button>
+      <button class="secondary-btn" onclick="toggleServerList()">Server List</button>
     </div>
 
-    <div id="serverConnectionStatus" class="server-status">
-      Not connected
-    </div>
+    <div id="serverConnectionStatus" class="server-status">Not connected</div>
+    <div id="currentServerDisplay" class="server-current">Server: None</div>
 
-    <div id="currentServerDisplay" class="server-current">
-      Server: None
-    </div>
-
-    <div id="serverListPanel"
-         class="server-list-panel hidden">
-
-      <button class="server-option current-server"
-      onclick="selectServerFromList(window.location.origin)">
-        Current Server
-      </button>
-
-      <button class="server-option"
-      onclick="selectServerFromList('https://battleship-server-18q1.onrender.com')">
-        Team0x00
-      </button>
-
-      <button class="server-option"
-      onclick="selectServerFromList('https://battleship.koon.us')">
-        Team0x01
-      </button>
-
-      <button class="server-option"
-      onclick="selectServerFromList('https://finalproject3750.onrender.com')">
-        Team0x03
-      </button>
-
-      <button class="server-option"
-      onclick="selectServerFromList('https://battleship-1-qpm6.onrender.com')">
-        Team0x0A
-      </button>
-
-      <button class="server-option"
-      onclick="selectServerFromList('https://final-project-7xwd.onrender.com')">
-        Team0x12
-      </button>
-
+    <div id="serverListPanel" class="server-list-panel hidden">
+      <button class="server-option current-server" onclick="selectServerFromList(window.location.origin)">Current Server</button>
+      <button class="server-option" onclick="selectServerFromList('https://battleship-server-18q1.onrender.com')">Team0x00</button>
+      <button class="server-option" onclick="selectServerFromList('https://battleship.koon.us')">Team0x01</button>
+      <button class="server-option" onclick="selectServerFromList('https://finalproject3750.onrender.com')">Team0x03</button>
+      <button class="server-option" onclick="selectServerFromList('https://battleship-1-qpm6.onrender.com')">Team0x0A</button>
+      <button class="server-option" onclick="selectServerFromList('https://final-project-7xwd.onrender.com')">Team0x12</button>
     </div>
   </div>
 </div>
-
 
 <div id="userProfile" class="user-profile hidden">
   <img src="avatar.png" class="avatar-circle">
   <span id="displayUsername" class="username-text"></span>
 </div>
 
-  <div class="container">
-    <section id="landingView">
-      <img src="logo.png" alt="Ship Sinkers Logo" class="main-logo">
-      <p class="subtitle">Create or join a game</p>
+<div class="container">
+  <section id="landingView">
+    <img src="logo.png" alt="Ship Sinkers Logo" class="main-logo">
+    <p class="subtitle">Create or join a game</p>
 
-      <div class="lobby-grid">
-        <!-- CAREER STATS MOVED LEFT -->
-        <div id="careerStatsCard" class="card hidden">
-  <h2 class="card-title">Career Stats</h2>
-  <div class="stats-grid">
-    <div class="stat-item">
-      <span class="stat-label">Player</span>
-      <span id="careerUsername" class="stat-value">-</span>
-    </div>
-    <div class="stat-item">
-      <span class="stat-label">Games Played</span>
-      <span id="careerGames" class="stat-value">0</span>
-    </div>
-    <div class="stat-item">
-      <span class="stat-label">Wins</span>
-      <span id="careerWins" class="stat-value">0</span>
-    </div>
-    <div class="stat-item">
-      <span class="stat-label">Losses</span>
-      <span id="careerLosses" class="stat-value">0</span>
-    </div>
-    <div class="stat-item">
-      <span class="stat-label">Total Shots</span>
-      <span id="careerShots" class="stat-value">0</span>
-    </div>
-    <div class="stat-item">
-      <span class="stat-label">Total Hits</span>
-      <span id="careerHits" class="stat-value">0</span>
-    </div>
-    <div class="stat-item">
-      <span class="stat-label">Accuracy</span>
-      <span id="careerAccuracy" class="stat-value">0.00%</span>
-    </div>
-  </div>
-</div>
+    <div class="lobby-grid">
+      <div id="careerStatsCard" class="card hidden">
+        <h2 class="card-title">Career Stats</h2>
+        <div class="stats-grid">
+          <div class="stat-item"><span class="stat-label">Player</span><span id="careerUsername" class="stat-value">-</span></div>
+          <div class="stat-item"><span class="stat-label">Games Played</span><span id="careerGames" class="stat-value">0</span></div>
+          <div class="stat-item"><span class="stat-label">Wins</span><span id="careerWins" class="stat-value">0</span></div>
+          <div class="stat-item"><span class="stat-label">Losses</span><span id="careerLosses" class="stat-value">0</span></div>
+          <div class="stat-item"><span class="stat-label">Total Shots</span><span id="careerShots" class="stat-value">0</span></div>
+          <div class="stat-item"><span class="stat-label">Total Hits</span><span id="careerHits" class="stat-value">0</span></div>
+          <div class="stat-item"><span class="stat-label">Accuracy</span><span id="careerAccuracy" class="stat-value">0.00%</span></div>
+        </div>
+      </div>
 
-        <div class="card lobby-main-card">
-          <input id="username" type="text" placeholder="Enter Username" />
-          <input id="gameId" type="number" placeholder="Enter Game ID (for join)" />
+      <div class="card lobby-main-card">
+        <input id="username" type="text" placeholder="Enter Username" />
+        <input id="gameId" type="number" placeholder="Enter Game ID (for join)" />
+        <div class="buttons">
+          <button onclick="openCreateGameModal()">Create Game</button>
+          <button onclick="joinGame()">Join Game</button>
+        </div>
+        <div id="status" class="status-text"></div>
+      </div>
 
-          <div class="buttons">
-            <button onclick="openCreateGameModal()">Create Game</button>
-            <button onclick="joinGame()">Join Game</button>
+      <div class="card available-games-card">
+        <div class="available-games-header">
+          <h2 class="card-title">Available Games</h2>
+          <button class="secondary-btn" onclick="loadAvailableGames()">Refresh List</button>
+        </div>
+        <div id="availableGamesList" class="available-games-list">
+          <p class="empty-games">No games loaded yet.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="gameView" class="hidden">
+    <div class="topbar">
+      <div>
+        <h1 class="game-title">Battleship Match</h1>
+        <p id="gameStatusOnly" class="subtitle left-align">Waiting for game data...</p>
+      </div>
+      <button class="secondary-btn back-btn" onclick="confirmForfeitMatch()">Forfeit</button>
+    </div>
+
+    <div class="turn-strip">
+      <div id="youTurnBadge" class="turn-badge">You</div>
+      <div id="turnIndicator" class="turn-indicator-text"></div> 
+      <div id="opponentTurnBadge" class="turn-badge">Opponent</div>
+    </div>
+
+    <div id="liveGameStatsCard" class="live-stats-strip hidden">
+      <div class="live-stat-pill"><span class="live-stat-label">Shots</span><span id="liveShots" class="live-stat-value">0</span></div>
+      <div class="live-stat-pill"><span class="live-stat-label">Hits</span><span id="liveHits" class="live-stat-value">0</span></div>
+      <div class="live-stat-pill"><span class="live-stat-label">Misses</span><span id="liveMisses" class="live-stat-value">0</span></div>
+      <div class="live-stat-pill"><span class="live-stat-label">Accuracy</span><span id="liveAccuracy" class="live-stat-value">0.00%</span></div>
+      <div class="live-stat-pill"><span class="live-stat-label">Ships Left</span><span id="liveShipsRemaining" class="live-stat-value">0</span></div>
+    </div>
+
+    <div class="boards">
+      <div id="shipSelectorPanel" class="ship-selector-panel hidden">
+        <h3>Ships</h3>
+        <button class="ship-choice active" onclick="selectShipToPlace(0)">5 x 1</button>
+        <button class="ship-choice" onclick="selectShipToPlace(1)">4 x 1</button>
+        <button class="ship-choice" onclick="selectShipToPlace(2)">3 x 1</button>
+        <button class="secondary-btn" onclick="rotateShipPlacement()">Rotate</button>
+        <p id="shipPlacementText">Selected: 5 x 1</p>
+      </div>
+
+      <div class="board-panel">
+        <h2 id="yourBoardLabel">Your Board</h2>
+        <div id="playerBoard" class="board"></div>
+      </div>
+
+      <div class="board-panel">
+        <div class="target-selector-header">
+          <h2 id="enemyBoardLabel">Target Board</h2>
+          <label for="opponentSelect" style="font-weight: bold; color: var(--text-color);">Targeting:</label>
+          <select id="opponentSelect" class="opponent-dropdown" onchange="changeSelectedOpponent()">
+            <option value="">No targets available</option>
+          </select>
+        </div>
+        <div id="targetBoard" class="board"></div>
+      </div>
+
+      <div class="sidebar-panel">
+        <div class="history-panel">
+          <div class="history-header"><h2>Move History</h2></div>
+          <div id="moveHistoryList" class="move-history-list">
+            <p class="empty-history">No moves yet.</p>
           </div>
-
-          <div id="status" class="status-text"></div>
-
         </div>
-
-        <div class="card available-games-card">
-          <div class="available-games-header">
-            <h2 class="card-title">Available Games</h2>
-            <button class="secondary-btn" onclick="loadAvailableGames()">Refresh List</button>
-          </div>
-
-          <div id="availableGamesList" class="available-games-list">
-            <p class="empty-games">No games loaded yet.</p>
-          </div>
+        <div class="game-actions">
+          <button id="startPlacementBtn" class="hidden" onclick="enablePlacementMode()">Start Ship Placement</button>
+          <button id="submitPlacementBtn" class="hidden" onclick="submitPlacedShips()">Confirm Placement</button>
+          <button id="clearPlacementBtn" class="hidden secondary-btn" onclick="clearPlacementSelection()">Clear Selection</button>
         </div>
       </div>
-
-    </section>
-
-    <section id="gameView" class="hidden">
-      <div class="topbar">
-        <div>
-          <h1 class="game-title">Battleship Match</h1>
-          <p id="gameStatusOnly" class="subtitle left-align">Waiting for game data...</p>
-        </div>
-        <button class="secondary-btn back-btn" onclick="confirmForfeitMatch()">
-          Forfeit
-        </button>
-      </div>
-
-      <div class="turn-strip">
-  <div id="youTurnBadge" class="turn-badge">You</div>
-  
-  <div id="turnIndicator" class="turn-indicator-text"></div> 
-  
-  <div id="opponentTurnBadge" class="turn-badge">Opponent</div>
+    </div>
+  </section>
 </div>
 
-      <div id="liveGameStatsCard" class="live-stats-strip hidden">
-        <div class="live-stat-pill">
-          <span class="live-stat-label">Shots</span>
-          <span id="liveShots" class="live-stat-value">0</span>
-        </div>
-        <div class="live-stat-pill">
-          <span class="live-stat-label">Hits</span>
-          <span id="liveHits" class="live-stat-value">0</span>
-        </div>
-        <div class="live-stat-pill">
-          <span class="live-stat-label">Misses</span>
-          <span id="liveMisses" class="live-stat-value">0</span>
-        </div>
-        <div class="live-stat-pill">
-          <span class="live-stat-label">Accuracy</span>
-          <span id="liveAccuracy" class="live-stat-value">0.00%</span>
-        </div>
-        <div class="live-stat-pill">
-          <span class="live-stat-label">Ships Left</span>
-          <span id="liveShipsRemaining" class="live-stat-value">0</span>
-        </div>
-      </div>
+<div id="createGameModal" class="modal hidden">
+  <div class="modal-card">
+    <h2>Create Game</h2>
+    <label for="gridSizeSelect">Board Size</label>
+    <select id="gridSizeSelect">
+      <option value="5">5 x 5</option>
+      <option value="6">6 x 6</option>
+      <option value="7">7 x 7</option>
+      <option value="8">8 x 8</option>
+      <option value="9">9 x 9</option>
+      <option value="10" selected>10 x 10</option>
+      <option value="11">11 x 11</option>
+      <option value="12">12 x 12</option>
+      <option value="13">13 x 13</option>
+      <option value="14">14 x 14</option>
+      <option value="15">15 x 15</option>
+    </select>
 
-<div class="boards">
+    <label for="maxPlayersInput">Max Players</label>
+    <input id="maxPlayersInput" type="number" min="1" max="100" value="2" placeholder="Enter number of players">
 
-  <div id="shipSelectorPanel" class="ship-selector-panel hidden">
-    <h3>Ships</h3>
-    <button class="ship-choice active" onclick="selectShipToPlace(0)">5 x 1</button>
-    <button class="ship-choice" onclick="selectShipToPlace(1)">4 x 1</button>
-    <button class="ship-choice" onclick="selectShipToPlace(2)">3 x 1</button>
-    <button class="secondary-btn" onclick="rotateShipPlacement()">Rotate</button>
-    <p id="shipPlacementText">Selected: 5 x 1</p>
-  </div>
+    <label for="shipCountDisplay">Ships</label>
+    <input id="shipCountDisplay" type="text" value="3 ships (5x1, 4x1, 3x1)" disabled />
 
-  <div class="board-panel">
-    <h2 id="yourBoardLabel">Your Board</h2>
-    <div id="playerBoard" class="board"></div>
-  </div>
-
-  <div class="board-panel">
-    <div class="target-selector-header">
-      <label for="opponentSelect" style="font-weight: bold; color: var(--text-color);">Targeting:</label>
-      <select id="opponentSelect" class="opponent-dropdown" onchange="changeSelectedOpponent()">
-        <option value="">No targets available</option>
-      </select>
-    </div>
-    <div id="targetBoard" class="board"></div>
-  </div>
-
-  <div class="sidebar-panel">
-    <div class="history-panel">
-      <div class="history-header">
-        <h2>Move History</h2>
-      </div>
-      <div id="moveHistoryList" class="move-history-list">
-        <p class="empty-history">No moves yet.</p>
-      </div>
-    </div>
-
-    <div class="game-actions">
-      <button id="startPlacementBtn" class="hidden" onclick="enablePlacementMode()">Start Ship Placement</button>
-      <button id="submitPlacementBtn" class="hidden" onclick="submitPlacedShips()">Confirm Placement</button>
-      <button id="clearPlacementBtn" class="hidden secondary-btn" onclick="clearPlacementSelection()">Clear Selection</button>
+    <div class="modal-actions">
+      <button onclick="createGameFromModal()">Create</button>
+      <button class="secondary-btn" onclick="closeCreateGameModal()">Cancel</button>
     </div>
   </div>
-
-</div>
-</section>
 </div>
 
-  <div id="createGameModal" class="modal hidden">
-    <div class="modal-card">
-      <h2>Create Game</h2>
-
-      <label for="gridSizeSelect">Board Size</label>
-      <select id="gridSizeSelect">
-        <option value="5">5 x 5</option>
-        <option value="6">6 x 6</option>
-        <option value="7">7 x 7</option>
-        <option value="8">8 x 8</option>
-        <option value="9">9 x 9</option>
-        <option value="10" selected>10 x 10</option>
-        <option value="11">11 x 11</option>
-        <option value="12">12 x 12</option>
-        <option value="13">13 x 13</option>
-        <option value="14">14 x 14</option>
-        <option value="15">15 x 15</option>
-      </select>
-
-      <label for="maxPlayersInput">Max Players</label>
-<input 
-  id="maxPlayersInput" 
-  type="number" 
-  min="1"
-  max="100"
-  value="2" 
-  placeholder="Enter number of players"
->
-
-      <label for="shipCountDisplay">Ships</label>
-      <input id="shipCountDisplay" type="text" value="3 ships (5x1, 4x1, 3x1)" disabled />
-
-      <div class="modal-actions">
-        <button onclick="createGameFromModal()">Create</button>
-        <button class="secondary-btn" onclick="closeCreateGameModal()">Cancel</button>
-      </div>
+<div id="lobbyModal" class="modal hidden">
+  <div class="modal-card">
+    <h2>Game Lobby</h2>
+    <p class="lobby-line"><strong>Game ID:</strong> <span id="lobbyGameId">-</span></p>
+    <p class="lobby-line"><strong>Status:</strong> <span id="lobbyStatusText">Waiting...</span></p>
+    <p class="lobby-line"><strong>Players:</strong> <span id="lobbyPlayerCount">- / -</span></p>
+    <div class="modal-actions">
+      <button id="enterGameBtn" class="hidden" onclick="enterGameFromLobby()">Enter Game</button>
+      <button class="secondary-btn" onclick="closeLobbyModal()">Close</button>
     </div>
   </div>
+</div>
 
-  <div id="lobbyModal" class="modal hidden">
-    <div class="modal-card">
-      <h2>Game Lobby</h2>
-
-      <p class="lobby-line"><strong>Game ID:</strong> <span id="lobbyGameId">-</span></p>
-      <p class="lobby-line"><strong>Status:</strong> <span id="lobbyStatusText">Waiting...</span></p>
-<p class="lobby-line"><strong>Players:</strong> <span id="lobbyPlayerCount">- / -</span></p>
-
-      <div class="modal-actions">
-        <button id="enterGameBtn" class="hidden" onclick="enterGameFromLobby()">Enter Game</button>
-        <button class="secondary-btn" onclick="closeLobbyModal()">Close</button>
-      </div>
+<div id="gameResultOverlay" class="result-overlay hidden">
+  <div class="result-content">
+    <div id="victoryMessage" class="hidden">
+      <h1 class="result-title victory">VICTORY</h1>
+      <p id="victorySubtitle" class="result-subtitle">Enemy fleet neutralized</p>
+    </div>
+    <div id="defeatMessage" class="hidden">
+      <h1 class="result-title defeat">DEFEAT</h1>
+      <p class="result-subtitle">Your fleet has been sunk</p>
+    </div>
+    <div id="resultStats" class="result-stats hidden">
+      <div class="result-stat-card"><span class="result-stat-label">Accuracy</span><span id="resultAccuracy" class="result-stat-value">0%</span></div>
+      <div class="result-stat-card"><span class="result-stat-label">Hits</span><span id="resultHits" class="result-stat-value">0</span></div>
+      <div class="result-stat-card"><span class="result-stat-label">Misses</span><span id="resultMisses" class="result-stat-value">0</span></div>
+    </div>
+    <div class="result-actions">
+      <button id="exitGameBtn" class="secondary-btn" onclick="goHome()">Exit Game</button>
     </div>
   </div>
-
-  <div id="gameResultOverlay" class="result-overlay hidden">
-    <div class="result-content">
-      <div id="victoryMessage" class="hidden">
-        <h1 class="result-title victory">VICTORY</h1>
-        <p id="victorySubtitle" class="result-subtitle">Enemy fleet neutralized</p>
-      </div>
-
-      <div id="defeatMessage" class="hidden">
-        <h1 class="result-title defeat">DEFEAT</h1>
-        <p class="result-subtitle">Your fleet has been sunk</p>
-      </div>
-
-      <div id="resultStats" class="result-stats hidden">
-        <div class="result-stat-card">
-          <span class="result-stat-label">Accuracy</span>
-          <span id="resultAccuracy" class="result-stat-value">0%</span>
-        </div>
-
-        <div class="result-stat-card">
-          <span class="result-stat-label">Hits</span>
-          <span id="resultHits" class="result-stat-value">0</span>
-        </div>
-
-        <div class="result-stat-card">
-          <span class="result-stat-label">Misses</span>
-          <span id="resultMisses" class="result-stat-value">0</span>
-        </div>
-      </div>
-
-      <div class="result-actions">
-        <button id="exitGameBtn" class="secondary-btn" onclick="exitFinishedGame()">Exit Game</button>
-      </div>
-    </div>
-  </div>
-
-  <script src="script.js"></script>
+</div>
 
 <div id="howToPlayOverlay" class="modal-overlay hidden">
   <div class="modal-content">
@@ -361,5 +242,7 @@
     <button class="primary-btn" style="margin-top: 20px;" onclick="toggleHowToPlay()">Got it!</button>
   </div>
 </div>
+
+<script src="script.js"></script>
 </body>
 </html>
