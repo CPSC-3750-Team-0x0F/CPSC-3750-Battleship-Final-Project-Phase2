@@ -20,6 +20,7 @@ else if (host.includes('christianjohnston.dev')) {
 
 let SERVER_BASE = localStorage.getItem("battleship_server_url") || default_choice;
 
+let playerNamesCache = {};
 let currentPlayerId = null;
 let currentGameId = null;
 let currentUsername = "";
@@ -154,6 +155,19 @@ async function loadAvailableGames() {
     }
 
     const games = Array.isArray(data) ? data : data.games || [];
+
+    // --- NEW LOGIC: POPULATE CACHE ---
+    games.forEach(game => {
+      // Some servers use .players, some use .participants
+      const playersInGame = game.players || game.participants || [];
+      playersInGame.forEach(p => {
+        if (p.player_id && p.username) {
+          playerNamesCache[p.player_id] = p.username;
+        }
+      });
+    });
+    // ---------------------------------
+
     renderAvailableGames(games);
   } catch (err) {
     if (container) {
