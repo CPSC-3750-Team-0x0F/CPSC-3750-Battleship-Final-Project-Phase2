@@ -572,7 +572,7 @@ async function createGameFromModal() {
 
   const username = document.getElementById("username").value.trim();
   const gridSize = Number(document.getElementById("gridSizeSelect").value);
-  const maxPlayers = Number(document.getElementById("maxPlayersInput").value);
+  let maxPlayers = Number(document.getElementById("maxPlayersInput").value);
 
   if (maxPlayers < 1) {
 	setStatus("Max players must be at least 1");
@@ -809,7 +809,7 @@ async function refreshGameState(silent = false) {
 function renderGameInfo(game) {
   const status = game.status || "unknown";
   const activePlayers = Number(game.active_players || 0);
-  const maxPlayers = Number(game.max_players || 0);
+  const maxPlayers = Number(game.max_players || 2);
   const currentTurnIndex = Number(game.current_turn_index ?? -1);
 
   const totalShipCells = SHIP_LOADOUT.reduce((sum, size) => sum + size, 0);
