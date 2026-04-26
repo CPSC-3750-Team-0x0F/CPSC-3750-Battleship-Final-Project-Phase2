@@ -739,7 +739,7 @@ function updateLobbyDisplay(game) {
   if ((status === "waiting_setup" || status === "waiting") && activePlayers < maxPlayers) {
     message = "Waiting for another player to join...";
   } else if ((status === "waiting_setup" || status === "waiting" || status === "active") && activePlayers === maxPlayers) {
-    message = "Both players are here. Ready to start ship placement.";
+    message = "All players are here. Ready to start ship placement.";
     canEnter = true;
   } else if (status === "playing") {
     message = "Game has started.";
@@ -1067,7 +1067,7 @@ async function submitPlacedShips() {
     document.getElementById("clearPlacementBtn").classList.add("hidden");
 
     document.getElementById("gameStatusOnly").textContent =
-      "Ships placed. Waiting for the other player...";
+      "Ships placed. Waiting for other player(s)...";
 
     await refreshGameState();
   } catch (err) {
