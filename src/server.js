@@ -24,7 +24,6 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl)
     if (!origin) return callback(null, true);
     
     if (allowedOrigins.indexOf(origin) !== -1) {
@@ -39,20 +38,23 @@ app.use(cors({
 
 app.use(bodyParser.json());
 
-/* ---------------- STATIC FRONTEND ---------------- */
-const clientPath = path.join(process.cwd(), "client");
-app.use("/projects/Ship-Sinkers-Phase-2", express.static(clientPath));
-app.use(express.static(clientPath));
-
-/* ---------------- API ROUTES ---------------- */
+/* ---------------- 1. API ROUTES ---------------- */
+// We move these up so they are checked before static file fallbacks
 app.use("/api/players", playerRoutes);
 app.use("/api/games", gameRoutes);
 app.use("/api/games", moveRoutes);
-
-/* ---------------- TEST ROUTES ---------------- */
 app.use("/api/test", testRoutes);
 
-/* ---------------- CONTRACT ENDPOINTS (v2.3) ---------------- */
+/* ---------------- 2. STATIC FRONTEND ---------------- */
+const clientPath = path.join(process.cwd(), "client");
+
+// Support for your root deployment
+app.use(express.static(clientPath));
+
+// Support for his nested Render deployment path
+app.use("/projects/Ship-Sinkers-Phase-2", express.static(clientPath));
+
+/* ---------------- 3. CONTRACT ENDPOINTS (v2.3) ---------------- */
 app.get("/api", (req, res) => {
   res.status(200).json({
     name: "Battleship API",
@@ -77,7 +79,7 @@ app.get("/api/health", (req, res) => {
   });
 });
 
-/* ---------------- SYSTEM RESET ---------------- */
+/* ---------------- 4. SYSTEM RESET ---------------- */
 app.post("/api/reset", async (req, res) => {
   try {
     await db.query(
@@ -94,8 +96,9 @@ app.post("/api/reset", async (req, res) => {
   }
 });
 
-/* ---------------- FRONTEND ROOT ---------------- */
-app.get("/", (req, res) => {
+/* ---------------- 5. FRONTEND ROOT (FALLBACK) ---------------- */
+// This MUST stay at the bottom so it doesn't intercept CSS/JS requests
+app.get(["/", "/projects/Ship-Sinkers-Phase-2"], (req, res) => {
   res.sendFile(path.join(clientPath, "index.html"));
 });
 
