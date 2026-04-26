@@ -27,6 +27,7 @@ let currentGameData = null;
 let currentTurnOrder = null;
 let currentGridSize = 10;
 let pollInterval = null;
+let selectedOpponentId = null;
 
 let placementMode = false;
 let pendingShips = [];
@@ -782,6 +783,7 @@ async function refreshGameState(silent = false) {
     saveSession();
 
     updateLobbyDisplay(currentGameData);
+    updateOpponentDropdown(currentGameData.participants);
     renderGameInfo(currentGameData);
     renderBoards();
     renderMoveHistory(currentGameData.moves);
@@ -1085,20 +1087,24 @@ function cellAlreadyTargetedByYou(row, col) {
   );
 }
 
-async function fireShot(row, col) {
+// Update the parameters to include targetId
+async function fireShot(row, col, targetId) {
   if (!currentGameId || !currentPlayerId || !SERVER_BASE) return;
 
-  if (cellAlreadyTargetedByYou(row, col)) {
-    document.getElementById("gameStatusOnly").textContent = "You already fired at that cell.";
+  // 1. Validation: Ensure we have a target
+  if (!targetId) {
+    setStatus("Error: No target player selected.");
     return;
   }
 
   try {
+    // 2. API Call: Send the target_id to the server
     const response = await fetch(`${getApiBase()}/games/${currentGameId}/fire`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         player_id: currentPlayerId,
+        target_id: targetId, // This is the new crucial line
         row,
         col
       })
@@ -1110,12 +1116,13 @@ async function fireShot(row, col) {
       throw new Error(data.message || data.error || "Shot failed");
     }
 
-    document.getElementById("gameStatusOnly").textContent =
-      `Shot result: ${data.result} | Game: ${data.game_status}`;
+    // 3. Feedback: Let the user know what happened
+    setStatus(`Shot at ${targetId}: ${data.result}`);
 
+    // 4. Refresh: Update all boards to show the new hit/miss
     await refreshGameState();
   } catch (err) {
-    document.getElementById("gameStatusOnly").textContent = err.message;
+    setStatus(err.message);
   }
 }
 
@@ -1207,41 +1214,55 @@ async function showGameResult(winnerId) {
 }
 
 function renderBoards() {
-  const canFire =
-    currentGameData &&
-    currentGameData.status === "playing" &&
-    Number(currentTurnOrder) === Number(currentGameData.current_turn_index);
+  if (!currentGameData) return;
 
-  buildBoard("playerBoard", placementMode, togglePendingShip);
-  buildBoard("enemyBoard", canFire, fireShot);
-
-  const placedShips = loadPlacedShips();
-  placedShips.forEach((ship) => {
-    markCell("playerBoard", ship.row, ship.col, "ship");
+  // 1. RENDER YOUR OWN BOARD
+  buildBoard("playerBoard", placementMode, (r, c) => {
+    if (placementMode) togglePendingShip(r, c);
   });
 
-  pendingShips.forEach((ship) => {
-    markCell("playerBoard", ship.row, ship.col, "pending-ship");
-  });
+  // Mark your ships (saved or currently being placed)
+  const savedShips = loadPlacedShips();
+  savedShips.forEach(s => markCell("playerBoard", s.row, s.col, "ship"));
+  pendingShips.forEach(s => markCell("playerBoard", s.row, s.col, "pending-ship"));
 
-  const moves = currentGameData?.moves || [];
+  // Mark shots that opponents fired at YOU
+  const moves = currentGameData.moves || [];
+  const shotsAtMe = moves.filter(m => Number(m.target_id) === Number(currentPlayerId));
+  shotsAtMe.forEach(m => markCell("playerBoard", Number(m.row), Number(m.col), m.result));
 
-  for (const move of moves) {
-    const row = Number(move.row);
-    const col = Number(move.col);
-    const resultClass = move.result === "hit" ? "hit" : "miss";
 
-    if (Number(move.player_id) === Number(currentPlayerId)) {
-      markCell("enemyBoard", row, col, resultClass);
+  // 2. RENDER THE TARGET BOARD (For the selected opponent)
+  const isMyTurn = Number(currentTurnOrder) === Number(currentGameData.current_turn_index);
+  const canFire = currentGameData.status === "playing" && isMyTurn && selectedOpponentId;
 
-      const enemyCell = getCell("enemyBoard", row, col);
-      if (enemyCell) {
-        enemyCell.classList.remove("targetable");
-        enemyCell.classList.add("disabled-target");
-      }
-    } else {
-      markCell("playerBoard", row, col, resultClass);
+  buildBoard("targetBoard", canFire, (r, c) => {
+    if (canFire) {
+      fireShot(r, c, selectedOpponentId);
     }
+  });
+
+  // Update the label above the target board so you know who you're looking at
+  const opponentLabel = document.getElementById("enemyBoardLabel"); // Make sure this ID exists or use your Target Board H2
+  const selectedOpponent = currentGameData.participants.find(p => Number(p.player_id) === selectedOpponentId);
+  
+  if (selectedOpponent && opponentLabel) {
+     opponentLabel.textContent = `Targeting: ${selectedOpponent.username} ${selectedOpponent.is_eliminated ? "(SUNK)" : ""}`;
+  }
+
+  // Mark YOUR shots fired at the SPECIFIC opponent selected in the dropdown
+  if (selectedOpponentId) {
+    const myShotsAtThem = moves.filter(m => 
+      Number(m.player_id) === Number(currentPlayerId) && 
+      Number(m.target_id) === Number(selectedOpponentId)
+    );
+
+    myShotsAtThem.forEach(m => {
+      markCell("targetBoard", Number(m.row), Number(m.col), m.result);
+      // Disable the cell so you can't click it again
+      const cell = getCell("targetBoard", Number(m.row), Number(m.col));
+      if (cell) cell.classList.add("disabled-target");
+    });
   }
 }
 
@@ -1462,21 +1483,22 @@ document.getElementById("exitGameBtn").addEventListener("click", () => {
   setStatus("Returned to lobby");
 });
 
-function updateTurnDisplay(status) {
+function updateTurnDisplay(gameState) {
   const indicator = document.getElementById("turnIndicator");
-  
-  // Reset classes first so they don't stack
   indicator.classList.remove("waiting", "your-turn", "opponent-turn");
 
-  if (status === "waiting") {
+  const activePlayer = gameState.participants.find(p => p.player_id === gameState.current_turn_id);
+  const isMyTurn = gameState.current_turn_id === currentPlayerId;
+
+  if (gameState.status === "waiting") {
     indicator.classList.add("waiting");
-    indicator.textContent = "Waiting for players...";
-  } else if (status === "my_turn") {
+    indicator.textContent = `Waiting for players (${gameState.participants.length}/X)...`;
+  } else if (isMyTurn) {
     indicator.classList.add("your-turn");
     indicator.textContent = "YOUR TURN";
   } else {
     indicator.classList.add("opponent-turn");
-    indicator.textContent = "OPPONENT'S TURN";
+    indicator.textContent = `TURN: ${activePlayer.username}`;
   }
 }
 
@@ -1487,3 +1509,38 @@ document.addEventListener("keydown", (event) => {
     rotateShipPlacement();
   }
 });
+
+function changeSelectedOpponent() {
+  const select = document.getElementById("opponentSelect");
+  // Convert to number if it exists, otherwise null
+  selectedOpponentId = select.value ? Number(select.value) : null;
+  
+  // Re-render the boards immediately to show the newly selected opponent's grid
+  renderBoards();
+}
+
+function updateOpponentDropdown(participants) {
+  const select = document.getElementById("opponentSelect");
+  if (!select) return;
+
+  // Filter out yourself
+  const opponents = participants.filter(p => Number(p.player_id) !== Number(currentPlayerId));
+
+  // If the user hasn't picked anyone yet, default to the first opponent
+  if (selectedOpponentId === null && opponents.length > 0) {
+    selectedOpponentId = Number(opponents[0].player_id);
+  }
+
+  // Map the opponents to HTML options
+  const optionsHtml = opponents.map(opp => {
+    const isSelected = Number(opp.player_id) === selectedOpponentId;
+    return `<option value="${opp.player_id}" ${isSelected ? 'selected' : ''}>
+      ${opp.username} ${opp.is_eliminated ? '(SUNK)' : ''}
+    </option>`;
+  }).join("");
+
+  // Only update the innerHTML if it has actually changed to prevent UI flickering
+  if (select.innerHTML !== optionsHtml) {
+    select.innerHTML = optionsHtml;
+  }
+}
