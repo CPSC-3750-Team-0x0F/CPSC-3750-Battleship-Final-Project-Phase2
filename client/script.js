@@ -1529,7 +1529,6 @@ function updateOpponentDropdown(participants) {
 
 // FIX: Ensure participants is an array before filtering
   if (!participants || !Array.isArray(participants)) {
-    console.warn("No participants data available for dropdown");
     return;
   }
 
@@ -1554,3 +1553,12 @@ function updateOpponentDropdown(participants) {
     select.innerHTML = optionsHtml;
   }
 }
+
+function safeSetText(id, text) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = text;
+}
+
+// Example usage in your update functions:
+safeSetText("careerUsername", currentUsername);
+safeSetText("lobbyGameId", currentGameId);
