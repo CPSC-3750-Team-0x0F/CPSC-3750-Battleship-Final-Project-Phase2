@@ -777,7 +777,7 @@ async function refreshGameState(silent = false) {
     // Safety: Ensure participants is at least an empty array so .find() doesn't crash later
     currentGameData = {
       ...game,
-      participants: Array.isArray(game.participants) ? game.participants : [],
+      participants: Array.isArray(game.players) ? game.players : [],
       moves: Array.isArray(moves) ? moves : []
     };
 
