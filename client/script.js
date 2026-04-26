@@ -783,7 +783,7 @@ async function refreshGameState(silent = false) {
     saveSession();
 
     updateLobbyDisplay(currentGameData);
-    updateOpponentDropdown(currentGameData.participants);
+    updateOpponentDropdown(currentGameData.participants || []);
     renderGameInfo(currentGameData);
     renderBoards();
     renderMoveHistory(currentGameData.moves);
@@ -1522,6 +1522,12 @@ function changeSelectedOpponent() {
 function updateOpponentDropdown(participants) {
   const select = document.getElementById("opponentSelect");
   if (!select) return;
+
+// FIX: Ensure participants is an array before filtering
+  if (!participants || !Array.isArray(participants)) {
+    console.warn("No participants data available for dropdown");
+    return;
+  }
 
   // Filter out yourself
   const opponents = participants.filter(p => Number(p.player_id) !== Number(currentPlayerId));
