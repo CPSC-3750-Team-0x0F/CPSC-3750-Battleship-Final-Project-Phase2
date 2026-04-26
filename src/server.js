@@ -3,6 +3,7 @@ const bodyParser = require("body-parser");
 const path = require("path");
 const cors = require("cors");
 const db = require("./db");
+const fs = require("fs"); // Keep this here
 
 const playerRoutes = require("./routes/playerRoutes");
 const gameRoutes = require("./routes/gameRoutes");
@@ -39,24 +40,22 @@ app.use(cors({
 app.use(bodyParser.json());
 
 /* ---------------- 1. API ROUTES ---------------- */
-// We move these up so they are checked before static file fallbacks
 app.use("/api/players", playerRoutes);
 app.use("/api/games", gameRoutes);
 app.use("/api/games", moveRoutes);
 app.use("/api/test", testRoutes);
 
-/* ---------------- STATIC FRONTEND ---------------- */
-// This looks for 'client' in the current folder, 
-// and if it's not there, it looks one level up.
-const fs = require('fs');
+/* ---------------- 2. STATIC FRONTEND ---------------- */
+// Smart path detection: looks in root, then looks one level up.
 let clientPath = path.join(process.cwd(), "client");
 
 if (!fs.existsSync(clientPath)) {
     clientPath = path.join(process.cwd(), "..", "client");
 }
 
-app.use(express.static(clientPath));
+// Order matters: serve specific paths before general ones
 app.use("/projects/Ship-Sinkers-Phase-2", express.static(clientPath));
+app.use(express.static(clientPath));
 
 /* ---------------- 3. CONTRACT ENDPOINTS (v2.3) ---------------- */
 app.get("/api", (req, res) => {
@@ -101,7 +100,6 @@ app.post("/api/reset", async (req, res) => {
 });
 
 /* ---------------- 5. FRONTEND ROOT (FALLBACK) ---------------- */
-// This MUST stay at the bottom so it doesn't intercept CSS/JS requests
 app.get(["/", "/projects/Ship-Sinkers-Phase-2"], (req, res) => {
   res.sendFile(path.join(clientPath, "index.html"));
 });
