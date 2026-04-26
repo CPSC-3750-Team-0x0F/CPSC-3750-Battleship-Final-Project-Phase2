@@ -774,18 +774,26 @@ async function refreshGameState(silent = false) {
       throw new Error(moves.message || moves.error || "Could not load moves");
     }
 
+    // Safety: Ensure participants is at least an empty array so .find() doesn't crash later
     currentGameData = {
       ...game,
+      participants: Array.isArray(game.participants) ? game.participants : [],
       moves: Array.isArray(moves) ? moves : []
     };
 
     currentGridSize = Number(game.grid_size || currentGridSize || 10);
     saveSession();
 
+    // UI Updates
     updateLobbyDisplay(currentGameData);
-    updateOpponentDropdown(currentGameData.participants || []);
+    
+    // Only update dropdown if we actually have participants
+    if (currentGameData.participants.length > 0) {
+      updateOpponentDropdown(currentGameData.participants);
+    }
+    
     renderGameInfo(currentGameData);
-    renderBoards();
+    renderBoards(); // This will now have access to the safe participants array
     renderMoveHistory(currentGameData.moves);
 
     await loadCareerStats();
