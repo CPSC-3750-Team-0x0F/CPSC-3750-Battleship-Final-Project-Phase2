@@ -1291,11 +1291,21 @@ function renderBoards() {
 
   // 4. UPDATE TARGET UI LABELS
   const opponentLabel = document.getElementById("enemyBoardLabel");
-  const selectedOpponent = participants.find(p => Number(p.player_id) === Number(selectedOpponentId));
+  
+  if (selectedOpponentId && opponentLabel) {
+    // 1. Try to find the opponent in the current participants list
+    const selectedOpponent = participants.find(p => Number(p.player_id) === Number(selectedOpponentId));
+    
+    // 2. Resolve the name: Server Object -> Global Cache -> Fallback ID
+    const displayName = (selectedOpponent && selectedOpponent.username) || 
+                        playerNamesCache[selectedOpponentId] || 
+                        `Player ${selectedOpponentId}`;
 
-  if (selectedOpponent && opponentLabel) {
-    const statusText = selectedOpponent.is_eliminated ? " (SUNK)" : "";
-    opponentLabel.textContent = `Targeting: ${selectedOpponent.username}${statusText}`;
+    // 3. Determine if they are sunk (Check status AND ship count/eliminated flag)
+    const isSunk = selectedOpponent && (selectedOpponent.is_eliminated || selectedOpponent.ships_remaining === 0);
+    const statusText = (currentGameData.status === "playing" && isSunk) ? " (SUNK)" : "";
+
+    opponentLabel.textContent = `Targeting: ${displayName}${statusText}`;
   } else if (opponentLabel) {
     opponentLabel.textContent = "Target Board";
   }
@@ -1568,10 +1578,12 @@ document.addEventListener("keydown", (event) => {
 
 function changeSelectedOpponent() {
   const select = document.getElementById("opponentSelect");
-  // Convert to number if it exists, otherwise null
+  if (!select) return;
+  
+  // Update the global ID variable
   selectedOpponentId = select.value ? Number(select.value) : null;
   
-  // Re-render the boards immediately to show the newly selected opponent's grid
+  // Immediately redraw the boards to show the new target
   renderBoards();
 }
 
@@ -1580,6 +1592,7 @@ function updateOpponentDropdown(participants) {
   if (!select) return;
 
   const players = Array.isArray(participants) ? participants : [];
+  // Filter out yourself
   const opponents = players.filter(p => Number(p.player_id) !== Number(currentPlayerId));
 
   if (opponents.length === 0) {
@@ -1588,21 +1601,23 @@ function updateOpponentDropdown(participants) {
     return;
   }
 
-  const currentlySelectedExists = opponents.some(opp => Number(opp.player_id) === Number(selectedOpponentId));
-  if (!currentlySelectedExists) {
+  // Ensure we have a selection if none exists
+  if (selectedOpponentId === null || !opponents.some(opp => Number(opp.player_id) === Number(selectedOpponentId))) {
     selectedOpponentId = Number(opponents[0].player_id);
   }
 
   const optionsHtml = opponents.map(opp => {
     const oppId = Number(opp.player_id);
-    const displayName = opp.username || playerNamesCache[oppId] || `Player ${oppId}`;
-    const isSelected = oppId === selectedOpponentId;
-
-    // Only show (SUNK) if the game is actually active AND ships are zero
-    const isActuallySunk = currentGameData.status === "playing" && 
-                           (opp.is_eliminated || opp.ships_remaining === 0);
     
-    const sunkText = isActuallySunk ? ' (SUNK)' : '';
+    // Check our cache for the name, otherwise fallback to "Player ID"
+    const displayName = opp.username || playerNamesCache[oppId] || `Player ${oppId}`;
+    
+    const isSelected = oppId === selectedOpponentId;
+    
+    // Only show (SUNK) if game is playing and they have 0 ships
+    const isSunk = currentGameData?.status === "playing" && 
+                   (opp.is_eliminated || opp.ships_remaining === 0);
+    const sunkText = isSunk ? ' (SUNK)' : '';
 
     return `<option value="${oppId}" ${isSelected ? 'selected' : ''}>
       ${displayName}${sunkText}
