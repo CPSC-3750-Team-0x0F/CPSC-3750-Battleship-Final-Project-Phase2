@@ -210,23 +210,10 @@
 
   <div id="shipSelectorPanel" class="ship-selector-panel hidden">
     <h3>Ships</h3>
-
-    <button class="ship-choice active" onclick="selectShipToPlace(0)">
-      5 x 1
-    </button>
-
-    <button class="ship-choice" onclick="selectShipToPlace(1)">
-      4 x 1
-    </button>
-
-    <button class="ship-choice" onclick="selectShipToPlace(2)">
-      3 x 1
-    </button>
-
-    <button class="secondary-btn" onclick="rotateShipPlacement()">
-      Rotate
-    </button>
-
+    <button class="ship-choice active" onclick="selectShipToPlace(0)">5 x 1</button>
+    <button class="ship-choice" onclick="selectShipToPlace(1)">4 x 1</button>
+    <button class="ship-choice" onclick="selectShipToPlace(2)">3 x 1</button>
+    <button class="secondary-btn" onclick="rotateShipPlacement()">Rotate</button>
     <p id="shipPlacementText">Selected: 5 x 1</p>
   </div>
 
@@ -236,43 +223,30 @@
   </div>
 
   <div class="board-panel">
-    <h2 id="enemyBoardLabel">Opponent Board</h2>
-    <div id="enemyBoard" class="board"></div>
+    <div class="target-selector-header">
+      <label for="opponentSelect" style="font-weight: bold; color: var(--text-color);">Targeting:</label>
+      <select id="opponentSelect" class="opponent-dropdown" onchange="changeSelectedOpponent()">
+        <option value="">No targets available</option>
+      </select>
+    </div>
+    <div id="targetBoard" class="board"></div>
   </div>
 
   <div class="sidebar-panel">
-
     <div class="history-panel">
       <div class="history-header">
         <h2>Move History</h2>
       </div>
-
       <div id="moveHistoryList" class="move-history-list">
         <p class="empty-history">No moves yet.</p>
       </div>
     </div>
 
     <div class="game-actions">
-      <button id="startPlacementBtn"
-              class="hidden"
-              onclick="enablePlacementMode()">
-        Start Ship Placement
-      </button>
-
-      <button id="submitPlacementBtn"
-              class="hidden"
-              onclick="submitPlacedShips()">
-        Confirm Placement
-      </button>
-
-      <button id="clearPlacementBtn"
-              class="hidden secondary-btn"
-              onclick="clearPlacementSelection()">
-        Clear Selection
-      </button>
-
+      <button id="startPlacementBtn" class="hidden" onclick="enablePlacementMode()">Start Ship Placement</button>
+      <button id="submitPlacementBtn" class="hidden" onclick="submitPlacedShips()">Confirm Placement</button>
+      <button id="clearPlacementBtn" class="hidden secondary-btn" onclick="clearPlacementSelection()">Clear Selection</button>
     </div>
-
   </div>
 
 </div>
