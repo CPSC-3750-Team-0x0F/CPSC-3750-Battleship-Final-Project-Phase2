@@ -1422,11 +1422,15 @@ function toggleHowToPlay() {
 }
 
 // Optional: Close modal if user clicks on the dimmed background area
-document.getElementById("howToPlayOverlay").addEventListener("click", (e) => {
-  if (e.target.id === "howToPlayOverlay") {
-    toggleHowToPlay();
-  }
-});
+const howToPlayOverlay = document.getElementById("howToPlayOverlay");
+
+if (howToPlayOverlay) {
+  howToPlayOverlay.addEventListener("click", (e) => {
+    if (e.target.id === "howToPlayOverlay") {
+      toggleHowToPlay();
+    }
+  });
+}
 
 // Function to show/hide the server modal
 function toggleServerModal() {
