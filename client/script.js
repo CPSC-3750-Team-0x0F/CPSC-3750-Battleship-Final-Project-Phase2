@@ -1536,16 +1536,21 @@ function updateOpponentDropdown(participants) {
   const select = document.getElementById("opponentSelect");
   if (!select) return;
 
-// FIX: Ensure participants is an array before filtering
-  if (!participants || !Array.isArray(participants)) {
+  // Ensure participants is a valid array
+  const players = Array.isArray(participants) ? participants : [];
+
+  // Filter out yourself using a loose inequality to handle string/number mix
+  const opponents = players.filter(p => p.player_id != currentPlayerId);
+
+  if (opponents.length === 0) {
+    select.innerHTML = '<option value="">No targets available</option>';
+    selectedOpponentId = null;
     return;
   }
 
-  // Filter out yourself
-  const opponents = participants.filter(p => Number(p.player_id) !== Number(currentPlayerId));
-
-  // If the user hasn't picked anyone yet, default to the first opponent
-  if (selectedOpponentId === null && opponents.length > 0) {
+  // If no opponent is selected, or the currently selected one is gone/invalid, default to the first
+  const currentlySelectedExists = opponents.some(opp => opp.player_id == selectedOpponentId);
+  if (!currentlySelectedExists) {
     selectedOpponentId = Number(opponents[0].player_id);
   }
 
@@ -1557,7 +1562,7 @@ function updateOpponentDropdown(participants) {
     </option>`;
   }).join("");
 
-  // Only update the innerHTML if it has actually changed to prevent UI flickering
+  // Only update if content changed
   if (select.innerHTML !== optionsHtml) {
     select.innerHTML = optionsHtml;
   }
@@ -1567,7 +1572,3 @@ function safeSetText(id, text) {
   const el = document.getElementById(id);
   if (el) el.textContent = text;
 }
-
-// Example usage in your update functions:
-safeSetText("careerUsername", currentUsername);
-safeSetText("lobbyGameId", currentGameId);
