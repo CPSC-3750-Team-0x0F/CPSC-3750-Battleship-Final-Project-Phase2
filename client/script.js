@@ -1221,18 +1221,18 @@ function renderBoards() {
     if (placementMode) togglePendingShip(r, c);
   });
 
-  // Mark your ships (saved or currently being placed)
   const savedShips = loadPlacedShips();
   savedShips.forEach(s => markCell("playerBoard", s.row, s.col, "ship"));
   pendingShips.forEach(s => markCell("playerBoard", s.row, s.col, "pending-ship"));
 
-  // Mark shots that opponents fired at YOU
   const moves = currentGameData.moves || [];
   const shotsAtMe = moves.filter(m => Number(m.target_id) === Number(currentPlayerId));
   shotsAtMe.forEach(m => markCell("playerBoard", Number(m.row), Number(m.col), m.result));
 
-
-  // 2. RENDER THE TARGET BOARD (For the selected opponent)
+  // 2. RENDER THE TARGET BOARD
+  // ADDED SAFETY CHECK: Ensure participants exists before trying to find someone
+  const participants = currentGameData.participants || [];
+  
   const isMyTurn = Number(currentTurnOrder) === Number(currentGameData.current_turn_index);
   const canFire = currentGameData.status === "playing" && isMyTurn && selectedOpponentId;
 
@@ -1242,15 +1242,17 @@ function renderBoards() {
     }
   });
 
-  // Update the label above the target board so you know who you're looking at
-  const opponentLabel = document.getElementById("enemyBoardLabel"); // Make sure this ID exists or use your Target Board H2
-  const selectedOpponent = currentGameData.participants.find(p => Number(p.player_id) === selectedOpponentId);
+  const opponentLabel = document.getElementById("enemyBoardLabel");
+  
+  // FIXED LINE 1247: Added check for 'participants'
+  const selectedOpponent = participants.find(p => Number(p.player_id) === selectedOpponentId);
   
   if (selectedOpponent && opponentLabel) {
      opponentLabel.textContent = `Targeting: ${selectedOpponent.username} ${selectedOpponent.is_eliminated ? "(SUNK)" : ""}`;
+  } else if (opponentLabel) {
+     opponentLabel.textContent = "Target Board"; // Fallback text
   }
 
-  // Mark YOUR shots fired at the SPECIFIC opponent selected in the dropdown
   if (selectedOpponentId) {
     const myShotsAtThem = moves.filter(m => 
       Number(m.player_id) === Number(currentPlayerId) && 
@@ -1259,7 +1261,6 @@ function renderBoards() {
 
     myShotsAtThem.forEach(m => {
       markCell("targetBoard", Number(m.row), Number(m.col), m.result);
-      // Disable the cell so you can't click it again
       const cell = getCell("targetBoard", Number(m.row), Number(m.col));
       if (cell) cell.classList.add("disabled-target");
     });
