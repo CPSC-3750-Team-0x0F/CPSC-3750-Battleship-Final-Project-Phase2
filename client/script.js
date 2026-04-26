@@ -788,7 +788,16 @@ async function refreshGameState(silent = false) {
       throw new Error(moves.message || moves.error || "Could not load moves");
     }
 
-    // Safety: Ensure participants is at least an empty array so .find() doesn't crash later
+    // 1. CAPTURE USERNAMES: Update the global cache if names are present
+    if (Array.isArray(game.players)) {
+      game.players.forEach(p => {
+        if (p.player_id && p.username) {
+          playerNamesCache[p.player_id] = p.username;
+        }
+      });
+    }
+
+    // 2. DATA NORMALIZATION: Map server 'players' to our 'participants' key
     currentGameData = {
       ...game,
       participants: Array.isArray(game.players) ? game.players : [],
@@ -798,7 +807,7 @@ async function refreshGameState(silent = false) {
     currentGridSize = Number(game.grid_size || currentGridSize || 10);
     saveSession();
 
-    // UI Updates
+    // 3. UI UPDATES
     updateLobbyDisplay(currentGameData);
     
     // Only update dropdown if we actually have participants
@@ -807,7 +816,7 @@ async function refreshGameState(silent = false) {
     }
     
     renderGameInfo(currentGameData);
-    renderBoards(); // This will now have access to the safe participants array
+    renderBoards(); 
     renderMoveHistory(currentGameData.moves);
 
     await loadCareerStats();
@@ -1585,18 +1594,20 @@ function updateOpponentDropdown(participants) {
   }
 
   const optionsHtml = opponents.map(opp => {
-  const oppId = Number(opp.player_id);
-  
-  // LOOKUP: 1. Try server object, 2. Try our global cache, 3. Fallback to ID
-  const displayName = opp.username || playerNamesCache[oppId] || `Player ${oppId}`;
-  
-  const isSelected = oppId === selectedOpponentId;
-  const sunkText = (opp.is_eliminated || opp.ships_remaining === 0) ? ' (SUNK)' : '';
+    const oppId = Number(opp.player_id);
+    const displayName = opp.username || playerNamesCache[oppId] || `Player ${oppId}`;
+    const isSelected = oppId === selectedOpponentId;
 
-  return `<option value="${oppId}" ${isSelected ? 'selected' : ''}>
-    ${displayName}${sunkText}
-  </option>`;
-}).join("");
+    // Only show (SUNK) if the game is actually active AND ships are zero
+    const isActuallySunk = currentGameData.status === "playing" && 
+                           (opp.is_eliminated || opp.ships_remaining === 0);
+    
+    const sunkText = isActuallySunk ? ' (SUNK)' : '';
+
+    return `<option value="${oppId}" ${isSelected ? 'selected' : ''}>
+      ${displayName}${sunkText}
+    </option>`;
+  }).join("");
 
   if (select.innerHTML !== optionsHtml) {
     select.innerHTML = optionsHtml;
