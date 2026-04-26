@@ -1585,16 +1585,18 @@ function updateOpponentDropdown(participants) {
   }
 
   const optionsHtml = opponents.map(opp => {
-    const oppId = Number(opp.player_id);
-    // Use the username if it exists, otherwise use "Player [ID]"
-    const displayName = opp.username || `Player ${oppId}`;
-    const isSelected = oppId === selectedOpponentId;
-    const sunkText = opp.is_eliminated ? ' (SUNK)' : '';
+  const oppId = Number(opp.player_id);
+  
+  // LOOKUP: 1. Try server object, 2. Try our global cache, 3. Fallback to ID
+  const displayName = opp.username || playerNamesCache[oppId] || `Player ${oppId}`;
+  
+  const isSelected = oppId === selectedOpponentId;
+  const sunkText = (opp.is_eliminated || opp.ships_remaining === 0) ? ' (SUNK)' : '';
 
-    return `<option value="${oppId}" ${isSelected ? 'selected' : ''}>
-      ${displayName}${sunkText}
-    </option>`;
-  }).join("");
+  return `<option value="${oppId}" ${isSelected ? 'selected' : ''}>
+    ${displayName}${sunkText}
+  </option>`;
+}).join("");
 
   if (select.innerHTML !== optionsHtml) {
     select.innerHTML = optionsHtml;
