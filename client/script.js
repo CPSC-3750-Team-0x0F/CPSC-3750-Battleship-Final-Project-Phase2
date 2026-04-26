@@ -1292,15 +1292,18 @@ window.addEventListener("load", async () => {
 
   const exitBtn = document.getElementById("exitGameBtn");
   if (exitBtn) {
-    exitBtn.addEventListener("click", () => {
-      stopPolling();
+    exitBtn.replaceWith(exitBtn.cloneNode(true)); // Clear old listeners
+    const newExitBtn = document.getElementById("exitGameBtn");
+    newExitBtn.addEventListener("click", () => {
+      if (pollInterval) clearInterval(pollInterval);
+      pollInterval = null;
 
       const overlay = document.getElementById("gameResultOverlay");
       if (overlay) overlay.classList.add("hidden");
 
       currentGameId = null;
       currentGameData = null;
-      currentTurnOrder = null;
+      selectedOpponentId = null; // Reset this!
       placementMode = false;
       pendingShips = [];
 
@@ -1308,7 +1311,7 @@ window.addEventListener("load", async () => {
       localStorage.removeItem(STORAGE_KEYS.turnOrder);
 
       clearLiveGameStats();
-      showLanding();
+      showLanding(); // Ensure this function correctly toggles #landingView vs #gameView
       loadAvailableGames();
     });
   }
