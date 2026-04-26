@@ -45,13 +45,17 @@ app.use("/api/games", gameRoutes);
 app.use("/api/games", moveRoutes);
 app.use("/api/test", testRoutes);
 
-/* ---------------- 2. STATIC FRONTEND ---------------- */
-const clientPath = path.join(process.cwd(), "client");
+/* ---------------- STATIC FRONTEND ---------------- */
+// This looks for 'client' in the current folder, 
+// and if it's not there, it looks one level up.
+const fs = require('fs');
+let clientPath = path.join(process.cwd(), "client");
 
-// Support for your root deployment
+if (!fs.existsSync(clientPath)) {
+    clientPath = path.join(process.cwd(), "..", "client");
+}
+
 app.use(express.static(clientPath));
-
-// Support for his nested Render deployment path
 app.use("/projects/Ship-Sinkers-Phase-2", express.static(clientPath));
 
 /* ---------------- 3. CONTRACT ENDPOINTS (v2.3) ---------------- */
