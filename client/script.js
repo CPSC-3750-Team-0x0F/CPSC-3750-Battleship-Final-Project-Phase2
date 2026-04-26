@@ -1224,43 +1224,60 @@ async function showGameResult(winnerId) {
 function renderBoards() {
   if (!currentGameData) return;
 
-  // 1. RENDER YOUR OWN BOARD
+  // 1. DYNAMIC TARGET ACQUISITION
+  // Ensure we have a target if one exists. Priority: Not us AND not eliminated.
+  const participants = Array.isArray(currentGameData.participants) ? currentGameData.participants : [];
+  
+  if (!selectedOpponentId && participants.length > 0) {
+    const validOpponent = participants.find(p => 
+      Number(p.player_id) !== Number(currentPlayerId) && !p.is_eliminated
+    ) || participants.find(p => Number(p.player_id) !== Number(currentPlayerId));
+
+    if (validOpponent) {
+      selectedOpponentId = Number(validOpponent.player_id);
+    }
+  }
+
+  // 2. RENDER YOUR OWN BOARD
   buildBoard("playerBoard", placementMode, (r, c) => {
     if (placementMode) togglePendingShip(r, c);
   });
 
-  const savedShips = loadPlacedShips();
+  // Apply ships and pending ships
+  const savedShips = typeof loadPlacedShips === 'function' ? loadPlacedShips() : [];
   savedShips.forEach(s => markCell("playerBoard", s.row, s.col, "ship"));
-  pendingShips.forEach(s => markCell("playerBoard", s.row, s.col, "pending-ship"));
+  
+  if (Array.isArray(pendingShips)) {
+    pendingShips.forEach(s => markCell("playerBoard", s.row, s.col, "pending-ship"));
+  }
 
-  const moves = currentGameData.moves || [];
+  // Render hits/misses on you
+  const moves = Array.isArray(currentGameData.moves) ? currentGameData.moves : [];
   const shotsAtMe = moves.filter(m => Number(m.target_id) === Number(currentPlayerId));
   shotsAtMe.forEach(m => markCell("playerBoard", Number(m.row), Number(m.col), m.result));
 
-  // 2. RENDER THE TARGET BOARD
-  // ADDED SAFETY CHECK: Ensure participants exists before trying to find someone
-  const participants = currentGameData.participants || [];
-  
+  // 3. RENDER THE TARGET BOARD
   const isMyTurn = Number(currentTurnOrder) === Number(currentGameData.current_turn_index);
   const canFire = currentGameData.status === "playing" && isMyTurn && selectedOpponentId;
 
   buildBoard("targetBoard", canFire, (r, c) => {
-    if (canFire) {
+    if (canFire && selectedOpponentId) {
       fireShot(r, c, selectedOpponentId);
     }
   });
 
+  // 4. UPDATE TARGET UI LABELS
   const opponentLabel = document.getElementById("enemyBoardLabel");
-  
-  // FIXED LINE 1247: Added check for 'participants'
-  const selectedOpponent = participants.find(p => Number(p.player_id) === selectedOpponentId);
-  
+  const selectedOpponent = participants.find(p => Number(p.player_id) === Number(selectedOpponentId));
+
   if (selectedOpponent && opponentLabel) {
-     opponentLabel.textContent = `Targeting: ${selectedOpponent.username} ${selectedOpponent.is_eliminated ? "(SUNK)" : ""}`;
+    const statusText = selectedOpponent.is_eliminated ? " (SUNK)" : "";
+    opponentLabel.textContent = `Targeting: ${selectedOpponent.username}${statusText}`;
   } else if (opponentLabel) {
-     opponentLabel.textContent = "Target Board"; // Fallback text
+    opponentLabel.textContent = "Target Board";
   }
 
+  // 5. RENDER YOUR SHOTS ON TARGET
   if (selectedOpponentId) {
     const myShotsAtThem = moves.filter(m => 
       Number(m.player_id) === Number(currentPlayerId) && 
