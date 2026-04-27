@@ -1798,28 +1798,6 @@ body.light-mode .move-history-item {
   border: 1px solid rgba(16, 32, 48, 0.10) !important;
 }
 
-/* Multiplayer target selector cleanup */
-.target-selector-header{
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  gap:8px;
-  margin-bottom:10px;
-  min-height:34px; /* keeps board heights consistent */
-}
-
-.target-selector-header.hidden{
-  display:none;
-}
-
-.opponent-dropdown{
-  width:auto;
-  min-width:150px;
-  max-width:180px;
-  margin:0;
-  padding:8px 12px;
-}
-
 /* Fix dropdown options in dark mode */
 select,
 .opponent-dropdown {
@@ -1851,27 +1829,43 @@ body.light-mode select option {
   color: #102030;
 }
 
+/* ==== FINAL BOARD ALIGNMENT FIX ==== */
+
+.board-panel{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+}
+
+/* same title row height on both boards */
+.board-panel h2{
+  height:34px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  margin:0 0 8px 0;
+}
+
+/* fixed selector row under title */
 .target-selector-header{
   display:flex;
   justify-content:center;
   align-items:center;
   gap:8px;
-  margin-top:6px;
-  margin-bottom:14px;
-  min-height:38px; /* keeps board same height */
+
+  height:44px;      /* locks board heights equal */
+  margin-bottom:12px;
 }
 
-.target-selector-header.hidden {
-  display: none !important;
-}
-
-.target-selector-header label{
-  font-weight:700;
-  margin:0;
+.target-selector-header.hidden{
+  visibility:hidden;   /* keep space in 2-player */
+  pointer-events:none;
 }
 
 .opponent-dropdown{
   min-width:170px;
-  max-width:210px;
+  max-width:190px;
+  width:auto;
   padding:8px 12px;
+  margin:0;
 }
