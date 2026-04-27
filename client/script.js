@@ -1644,44 +1644,63 @@ function changeSelectedOpponent() {
 
 function updateOpponentDropdown(participants) {
   const select = document.getElementById("opponentSelect");
+  const selectorHeader = document.querySelector(".target-selector-header");
   if (!select) return;
 
   const players = Array.isArray(participants) ? participants : [];
-  // Filter out yourself
-  const opponents = players.filter(p => Number(p.player_id) !== Number(currentPlayerId));
+  const opponents = players.filter(
+    p => Number(p.player_id) !== Number(currentPlayerId)
+  );
 
   if (opponents.length === 0) {
     select.innerHTML = '<option value="">No targets available</option>';
     selectedOpponentId = null;
+    if (selectorHeader) selectorHeader.classList.add("hidden");
     return;
   }
 
-  // Ensure we have a selection if none exists
-  if (selectedOpponentId === null || !opponents.some(opp => Number(opp.player_id) === Number(selectedOpponentId))) {
+  // 1v1: auto-target only opponent and hide selector
+  if (opponents.length === 1) {
+    selectedOpponentId = Number(opponents[0].player_id);
+
+    select.innerHTML = `
+      <option value="${selectedOpponentId}">
+        ${opponents[0].username || `Player ${selectedOpponentId}`}
+      </option>
+    `;
+
+    if (selectorHeader) selectorHeader.classList.add("hidden");
+    return;
+  }
+
+  // 3+ players: show selector
+  if (selectorHeader) selectorHeader.classList.remove("hidden");
+
+  if (
+    selectedOpponentId === null ||
+    !opponents.some(o => Number(o.player_id) === Number(selectedOpponentId))
+  ) {
     selectedOpponentId = Number(opponents[0].player_id);
   }
 
   const optionsHtml = opponents.map(opp => {
     const oppId = Number(opp.player_id);
+    const displayName =
+      opp.username ||
+      playerNamesCache[oppId] ||
+      `Player ${oppId}`;
 
-    // If we don't know this person yet, try a quick cache refresh in the background
-    if (!playerNamesCache[oppId] && !opp.username) {
-    refreshPlayerNamesCache(); 
-    }
-    
-    // Check our cache for the name, otherwise fallback to "Player ID"
-    const displayName = opp.username || playerNamesCache[oppId] || `Player ${oppId}`;
-    
     const isSelected = oppId === selectedOpponentId;
-    
-    // Only show (SUNK) if game is playing and they have 0 ships
-    const isSunk = currentGameData?.status === "playing" && 
-                   (opp.is_eliminated || opp.ships_remaining === 0);
-    const sunkText = isSunk ? ' (SUNK)' : '';
 
-    return `<option value="${oppId}" ${isSelected ? 'selected' : ''}>
-      ${displayName}${sunkText}
-    </option>`;
+    const isSunk =
+      currentGameData?.status === "playing" &&
+      (opp.is_eliminated || Number(opp.ships_remaining) === 0);
+
+    return `
+      <option value="${oppId}" ${isSelected ? "selected" : ""}>
+        ${displayName}${isSunk ? " (SUNK)" : ""}
+      </option>
+    `;
   }).join("");
 
   if (select.innerHTML !== optionsHtml) {

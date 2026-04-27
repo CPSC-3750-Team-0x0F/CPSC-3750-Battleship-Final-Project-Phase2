@@ -1797,3 +1797,56 @@ body.light-mode .move-history-item {
   background: #eef3f8 !important;
   border: 1px solid rgba(16, 32, 48, 0.10) !important;
 }
+
+/* Multiplayer target selector cleanup */
+.target-selector-header{
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  gap:8px;
+  margin-bottom:10px;
+  min-height:34px; /* keeps board heights consistent */
+}
+
+.target-selector-header.hidden{
+  display:none;
+}
+
+.opponent-dropdown{
+  width:auto;
+  min-width:150px;
+  max-width:180px;
+  margin:0;
+  padding:8px 12px;
+}
+
+/* Fix dropdown options in dark mode */
+select,
+.opponent-dropdown {
+  background: var(--panel-strong);
+  color: var(--text-main);
+}
+
+/* ALL dropdowns readable in dark mode */
+select {
+  background: var(--panel-strong);
+  color: var(--text-main);
+  border: 1px solid var(--border);
+}
+
+/* Dropdown menu items (board size, max players, target selector, etc) */
+select option {
+  background: #14263c;
+  color: #eef4fb;
+}
+
+/* Light mode dropdown options */
+body.light-mode select {
+  background: #ffffff;
+  color: #102030;
+}
+
+body.light-mode select option {
+  background: #ffffff;
+  color: #102030;
+}
