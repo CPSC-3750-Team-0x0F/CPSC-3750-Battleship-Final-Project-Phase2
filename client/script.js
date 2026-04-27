@@ -633,6 +633,7 @@ async function createGameFromModal() {
     }
 
     currentGameId = game.game_id;
+    await refreshPlayerNamesCache();
     saveSession();
     showAccountHeader(currentUsername);
     await loadCareerStats();
@@ -682,6 +683,7 @@ async function joinGame() {
     }
 
     currentGameId = Number(gameId);
+    await refreshPlayerNamesCache();
     currentTurnOrder = Number(joinData.turn_order ?? 1);
     saveSession();
     showAccountHeader(currentUsername);
@@ -1608,6 +1610,11 @@ function updateOpponentDropdown(participants) {
 
   const optionsHtml = opponents.map(opp => {
     const oppId = Number(opp.player_id);
+
+    // If we don't know this person yet, try a quick cache refresh in the background
+    if (!playerNamesCache[oppId] && !opp.username) {
+    refreshPlayerNamesCache(); 
+    }
     
     // Check our cache for the name, otherwise fallback to "Player ID"
     const displayName = opp.username || playerNamesCache[oppId] || `Player ${oppId}`;
@@ -1632,4 +1639,25 @@ function updateOpponentDropdown(participants) {
 function safeSetText(id, text) {
   const el = document.getElementById(id);
   if (el) el.textContent = text;
+}
+
+async function refreshPlayerNamesCache() {
+  if (!requireServer()) return;
+
+  try {
+    const response = await fetch(`${getApiBase()}/players`);
+    const players = await response.json();
+
+    if (response.ok && Array.isArray(players)) {
+      players.forEach(p => {
+        if (p.player_id && p.username) {
+          playerNamesCache[p.player_id] = p.username;
+        }
+      });
+      // After updating the cache, redraw the boards to replace "Player ID" with names
+      renderBoards();
+    }
+  } catch (err) {
+    console.error("Failed to fetch player names:", err);
+  }
 }
