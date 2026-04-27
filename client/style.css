@@ -1846,20 +1846,20 @@ body.light-mode select option {
   margin:0 0 8px 0;
 }
 
-/* fixed selector row under title */
 .target-selector-header{
+  position:absolute;
+  top:68px;       /* sits under title */
+  left:50%;
+  transform:translateX(-50%);
   display:flex;
-  justify-content:center;
   align-items:center;
   gap:8px;
-
-  height:44px;      /* locks board heights equal */
-  margin-bottom:12px;
+  height:auto;
+  margin:0;
 }
 
 .target-selector-header.hidden{
-  visibility:hidden;   /* keep space in 2-player */
-  pointer-events:none;
+  display:none !important;
 }
 
 .opponent-dropdown{
