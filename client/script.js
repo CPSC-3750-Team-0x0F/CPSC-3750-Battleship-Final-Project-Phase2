@@ -1331,7 +1331,6 @@ function renderBoards() {
   });
 
 // 4. UPDATE LABELS
-// 4. UPDATE LABELS
 const opponentLabel = document.getElementById("enemyBoardLabel");
 
 if (selectedOpponentId && opponentLabel) {

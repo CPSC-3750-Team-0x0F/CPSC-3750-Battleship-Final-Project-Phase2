@@ -150,14 +150,19 @@
       </div>
 
       <div class="board-panel">
-      <div class="target-selector-header">
-        <label id="enemyBoardLabel" for="opponentSelect">Targeting:</label>
+        <h2 id="enemyBoardLabel">Opponent Board</h2>
 
-        <select id="opponentSelect"
-                class="opponent-dropdown"
-                onchange="changeSelectedOpponent()">
-          <option value="">No targets available</option>
-        </select>
+        <div class="target-selector-header">
+          <label for="opponentSelect">Targeting:</label>
+
+          <select id="opponentSelect"
+                  class="opponent-dropdown"
+                  onchange="changeSelectedOpponent()">
+            <option value="">No targets available</option>
+          </select>
+        </div>
+
+        <div id="targetBoard" class="board"></div>
       </div>
 
         <div id="targetBoard" class="board"></div>
