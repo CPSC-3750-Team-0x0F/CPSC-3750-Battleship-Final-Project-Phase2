@@ -1861,9 +1861,8 @@ body.light-mode select option {
   min-height:38px; /* keeps board same height */
 }
 
-.target-selector-header.hidden{
-  visibility:hidden;   /* keeps spacing in 2-player */
-  display:flex !important;
+.target-selector-header.hidden {
+  display: none !important;
 }
 
 .target-selector-header label{
