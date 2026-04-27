@@ -870,7 +870,6 @@ function renderGameInfo(game) {
   const hasPlaced = placed.length === totalShipCells;
 
   document.getElementById("yourBoardLabel").textContent = `${currentUsername}'s Board`;
-  document.getElementById("enemyBoardLabel").textContent = "Targeting:";
 
   let message = `Game status: ${status} | Players: ${activePlayers}/${maxPlayers}`;
 
@@ -1666,18 +1665,22 @@ function updateOpponentDropdown(participants) {
   if (opponents.length === 1) {
     selectedOpponentId = Number(opponents[0].player_id);
 
-    select.innerHTML = `
-      <option value="${selectedOpponentId}">
-        ${opponents[0].username || `Player ${selectedOpponentId}`}
-      </option>
-    `;
+    const enemyLabel = document.getElementById("enemyBoardLabel");
 
-    if (selectorHeader) selectorHeader.classList.add("hidden");
+    if (enemyLabel) {
+      enemyLabel.textContent =
+        `${opponents[0].username || `Player ${selectedOpponentId}`}'s Board`;
+    }
+
+    // hide only dropdown, NOT the whole label row
+    select.style.display = "none";
+
     return;
   }
 
   // 3+ players: show selector
   if (selectorHeader) selectorHeader.classList.remove("hidden");
+  select.style.display = "";
 
   if (
     selectedOpponentId === null ||
