@@ -704,6 +704,7 @@ async function joinGame() {
 function buildBoard(elementId, clickable = false, onCellClick = null) {
   const board = document.getElementById(elementId);
   board.innerHTML = "";
+  clearShipPreview?.();
   board.style.gridTemplateColumns = `repeat(${currentGridSize}, 36px)`;
 
   for (let i = 0; i < currentGridSize * currentGridSize; i++) {
