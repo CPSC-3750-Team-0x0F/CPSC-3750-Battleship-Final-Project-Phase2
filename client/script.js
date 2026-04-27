@@ -1250,7 +1250,6 @@ function renderBoards() {
   if (!currentGameData) return;
 
   // 1. DYNAMIC TARGET ACQUISITION
-  // Ensure we have a target if one exists. Priority: Not us AND not eliminated.
   const participants = Array.isArray(currentGameData.participants) ? currentGameData.participants : [];
   
   if (!selectedOpponentId && participants.length > 0) {
@@ -1268,18 +1267,23 @@ function renderBoards() {
     if (placementMode) togglePendingShip(r, c);
   });
 
-  // Apply ships and pending ships
+  // Apply ships
   const savedShips = typeof loadPlacedShips === 'function' ? loadPlacedShips() : [];
-  savedShips.forEach(s => markCell("playerBoard", s.row, s.col, "ship"));
+  savedShips.forEach(s => markCell("playerBoard", Number(s.row), Number(s.col), "ship"));
   
-  if (Array.isArray(pendingShips)) {
-    pendingShips.forEach(s => markCell("playerBoard", s.row, s.col, "pending-ship"));
+  if (placementMode && Array.isArray(pendingShips)) {
+    pendingShips.forEach(s => markCell("playerBoard", Number(s.row), Number(s.col), "pending-ship"));
   }
 
-  // Render hits/misses on you
+  // Render shots AT YOU (Your Board)
   const moves = Array.isArray(currentGameData.moves) ? currentGameData.moves : [];
   const shotsAtMe = moves.filter(m => Number(m.target_id) === Number(currentPlayerId));
-  shotsAtMe.forEach(m => markCell("playerBoard", Number(m.row), Number(m.col), m.result));
+  
+  shotsAtMe.forEach(m => {
+    // Standardize result string: check .result, fallback to .hit boolean, default to 'miss'
+    const res = String(m.result || (m.hit ? "hit" : "miss")).toLowerCase();
+    markCell("playerBoard", Number(m.row), Number(m.col), res);
+  });
 
   // 3. RENDER THE TARGET BOARD
   const isMyTurn = Number(currentTurnOrder) === Number(currentGameData.current_turn_index);
@@ -1291,19 +1295,18 @@ function renderBoards() {
     }
   });
 
-  // 4. UPDATE TARGET UI LABELS
+  // 4. UPDATE TARGET UI LABELS & CACHE LOOKUP
   const opponentLabel = document.getElementById("enemyBoardLabel");
   
   if (selectedOpponentId && opponentLabel) {
-    // 1. Try to find the opponent in the current participants list
     const selectedOpponent = participants.find(p => Number(p.player_id) === Number(selectedOpponentId));
     
-    // 2. Resolve the name: Server Object -> Global Cache -> Fallback ID
+    // Resolve name: Server Object -> Global Cache -> Fallback "Player ID"
     const displayName = (selectedOpponent && selectedOpponent.username) || 
                         playerNamesCache[selectedOpponentId] || 
                         `Player ${selectedOpponentId}`;
 
-    // 3. Determine if they are sunk (Check status AND ship count/eliminated flag)
+    // Determine if sunk: Check if game is active AND they have no ships/are eliminated
     const isSunk = selectedOpponent && (selectedOpponent.is_eliminated || selectedOpponent.ships_remaining === 0);
     const statusText = (currentGameData.status === "playing" && isSunk) ? " (SUNK)" : "";
 
@@ -1312,7 +1315,7 @@ function renderBoards() {
     opponentLabel.textContent = "Target Board";
   }
 
-  // 5. RENDER YOUR SHOTS ON TARGET
+  // 5. RENDER YOUR SHOTS ON CURRENT TARGET
   if (selectedOpponentId) {
     const myShotsAtThem = moves.filter(m => 
       Number(m.player_id) === Number(currentPlayerId) && 
@@ -1320,7 +1323,10 @@ function renderBoards() {
     );
 
     myShotsAtThem.forEach(m => {
-      markCell("targetBoard", Number(m.row), Number(m.col), m.result);
+      // Standardize result string
+      const res = String(m.result || (m.hit ? "hit" : "miss")).toLowerCase();
+      markCell("targetBoard", Number(m.row), Number(m.col), res);
+      
       const cell = getCell("targetBoard", Number(m.row), Number(m.col));
       if (cell) cell.classList.add("disabled-target");
     });
