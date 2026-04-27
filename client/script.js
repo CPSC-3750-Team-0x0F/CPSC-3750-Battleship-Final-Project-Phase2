@@ -1331,12 +1331,12 @@ function renderBoards() {
     }
   });
 
-  // 4. Update target label
+// 4. UPDATE LABELS
   const opponentLabel = document.getElementById("enemyBoardLabel");
 
   if (selectedOpponentId && opponentLabel) {
     const selectedOpponent = participants.find(
-      (p) => Number(p.player_id) === Number(selectedOpponentId)
+      p => Number(p.player_id) === Number(selectedOpponentId)
     );
 
     const displayName =
@@ -1344,14 +1344,19 @@ function renderBoards() {
       playerNamesCache[selectedOpponentId] ||
       `Player ${selectedOpponentId}`;
 
-    const isSunk =
-      selectedOpponent &&
-      (selectedOpponent.is_eliminated ||
-        Number(selectedOpponent.ships_remaining) === 0);
+    const opponents = participants.filter(
+      p => Number(p.player_id) !== Number(currentPlayerId)
+    );
 
-    const statusText = currentGameData.status === "playing" && isSunk ? " (SUNK)" : "";
+    // 1v1
+    if (opponents.length === 1) {
+      opponentLabel.textContent = `${displayName}'s Board`;
+    }
 
-    opponentLabel.textContent = `Targeting: ${displayName}${statusText}`;
+    // 3+ players
+    else {
+      opponentLabel.textContent = "Opponent Board";
+    }
   }
 
   // 5. Show ALL shots fired at selected target, not just your own
