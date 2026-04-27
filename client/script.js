@@ -1348,14 +1348,22 @@ function renderBoards() {
       p => Number(p.player_id) !== Number(currentPlayerId)
     );
 
-    // 1v1
+    const isSunk =
+      selectedOpponent &&
+      (selectedOpponent.is_eliminated ||
+        Number(selectedOpponent.ships_remaining) === 0);
+
+    const statusText =
+      currentGameData.status === "playing" && isSunk ? " (SUNK)" : "";
+
+    // 2-player mode
     if (opponents.length === 1) {
       opponentLabel.textContent = `${displayName}'s Board`;
     }
 
-    // 3+ players
+    // 3+ player mode
     else {
-      opponentLabel.textContent = "Opponent Board";
+      opponentLabel.textContent = `Targeting: ${displayName}${statusText}`;
     }
   }
 

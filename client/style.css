@@ -1856,11 +1856,23 @@ body.light-mode select option {
   justify-content:center;
   align-items:center;
   gap:8px;
-  margin-bottom:10px;
-  min-height:40px; /* reserve same space always */
+  margin-top:6px;
+  margin-bottom:14px;
+  min-height:38px; /* keeps board same height */
 }
 
 .target-selector-header.hidden{
-  visibility:hidden; /* IMPORTANT: keeps space */
+  visibility:hidden;   /* keeps spacing in 2-player */
   display:flex !important;
+}
+
+.target-selector-header label{
+  font-weight:700;
+  margin:0;
+}
+
+.opponent-dropdown{
+  min-width:170px;
+  max-width:210px;
+  padding:8px 12px;
 }
