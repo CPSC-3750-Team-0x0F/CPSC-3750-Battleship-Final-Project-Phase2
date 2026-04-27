@@ -259,25 +259,38 @@ exports.getGame = async (req, res) => {
     );
 
     const playersRes = await db.query(
-      `SELECT gp.player_id,
-              COUNT(s.row)::int AS ships_remaining
-       FROM game_players gp
-       LEFT JOIN ships s ON gp.game_id = s.game_id AND gp.player_id = s.player_id
-       LEFT JOIN moves m ON s.game_id = m.game_id 
-                         AND s.row = m.row 
-                         AND s.col = m.col 
-                         AND m.result = 'hit'
-       WHERE gp.game_id = $1 AND m.move_id IS NULL
-       GROUP BY gp.player_id
-       ORDER BY gp.player_id ASC`,
-      [gameId]
+    `
+    SELECT
+      gp.player_id,
+      gp.turn_order,
+      p.username,
+      COUNT(s.row)::int AS ships_remaining
+    FROM game_players gp
+    JOIN players p
+      ON gp.player_id = p.player_id
+    LEFT JOIN ships s
+      ON gp.game_id = s.game_id
+     AND gp.player_id = s.player_id
+    LEFT JOIN moves m
+      ON s.game_id = m.game_id
+     AND s.row = m.row
+     AND s.col = m.col
+     AND m.result = 'hit'
+    WHERE gp.game_id = $1
+      AND m.move_id IS NULL
+    GROUP BY gp.player_id, gp.turn_order, p.username
+    ORDER BY gp.turn_order ASC
+    `,
+    [gameId]
     );
 
     const players = playersRes.rows.map((p) => ({
       player_id: Number(p.player_id),
+      turn_order: Number(p.turn_order),
+      username: p.username,
       ships_remaining: Number(p.ships_remaining)
     }));
-
+    
     return res.status(200).json({
       game_id: Number(game.game_id),
       grid_size: Number(game.grid_size),

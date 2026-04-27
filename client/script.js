@@ -780,9 +780,9 @@ async function refreshGameState(silent = false) {
 
   try {
     const [gameRes, movesRes] = await Promise.all([
-    fetch(`${getApiBase()}/games/${currentGameId}`, { cache: "no-store" }),
-    fetch(`${getApiBase()}/games/${currentGameId}/moves`, { cache: "no-store" })
-]);
+      fetch(`${getApiBase()}/games/${currentGameId}`, { cache: "no-store" }),
+      fetch(`${getApiBase()}/games/${currentGameId}/moves`, { cache: "no-store" })
+    ]);
 
     const game = await gameRes.json();
     const moves = await movesRes.json();
@@ -795,7 +795,7 @@ async function refreshGameState(silent = false) {
       throw new Error(moves.message || moves.error || "Could not load moves");
     }
 
-    // 1. CAPTURE USERNAMES: Update the global cache if names are present
+    // Cache usernames
     if (Array.isArray(game.players)) {
       game.players.forEach(p => {
         if (p.player_id && p.username) {
@@ -804,39 +804,51 @@ async function refreshGameState(silent = false) {
       });
     }
 
-    // 2. DATA NORMALIZATION: Map server 'players' to our 'participants' key
+    // Normalize server data
     currentGameData = {
       ...game,
       participants: Array.isArray(game.players) ? game.players : [],
       moves: Array.isArray(moves) ? moves : []
     };
 
+    const me = currentGameData.participants.find(
+      (p) => Number(p.player_id) === Number(currentPlayerId)
+    );
+
+    if (me && me.turn_order !== undefined && me.turn_order !== null) {
+      currentTurnOrder = Number(me.turn_order);
+      localStorage.setItem(STORAGE_KEYS.turnOrder, currentTurnOrder);
+    }
+
     currentGridSize = Number(game.grid_size || currentGridSize || 10);
     saveSession();
 
-    // 3. UI UPDATES
+    // UI updates
     updateLobbyDisplay(currentGameData);
-    
-    // Only update dropdown if we actually have participants
+
     if (currentGameData.participants.length > 0) {
       updateOpponentDropdown(currentGameData.participants);
     }
-    
+
     renderGameInfo(currentGameData);
-    renderBoards(); 
+    renderBoards();
     renderMoveHistory(currentGameData.moves);
 
     await loadCareerStats();
 
-    if (currentGameData.status === "playing" || currentGameData.status === "finished") {
+    if (
+      currentGameData.status === "playing" ||
+      currentGameData.status === "finished"
+    ) {
       await loadLiveGameStats();
     } else {
       clearLiveGameStats();
     }
 
-    if (currentGameData && currentGameData.status === "finished") {
+    if (currentGameData.status === "finished") {
       showGameResult(currentGameData.winner_id);
     }
+
   } catch (err) {
     if (!silent) {
       const statusEl = document.getElementById("gameStatusOnly");
