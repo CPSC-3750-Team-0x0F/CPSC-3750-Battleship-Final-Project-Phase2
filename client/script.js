@@ -870,7 +870,7 @@ function renderGameInfo(game) {
   const hasPlaced = placed.length === totalShipCells;
 
   document.getElementById("yourBoardLabel").textContent = `${currentUsername}'s Board`;
-  document.getElementById("enemyBoardLabel").textContent = "Opponent Board";
+  document.getElementById("enemyBoardLabel").textContent = "Targeting:";
 
   let message = `Game status: ${status} | Players: ${activePlayers}/${maxPlayers}`;
 
@@ -1332,40 +1332,29 @@ function renderBoards() {
   });
 
 // 4. UPDATE LABELS
-  const opponentLabel = document.getElementById("enemyBoardLabel");
+// 4. UPDATE LABELS
+const opponentLabel = document.getElementById("enemyBoardLabel");
 
-  if (selectedOpponentId && opponentLabel) {
-    const selectedOpponent = participants.find(
-      p => Number(p.player_id) === Number(selectedOpponentId)
-    );
+if (selectedOpponentId && opponentLabel) {
+  const selectedOpponent = participants.find(
+    p => Number(p.player_id) === Number(selectedOpponentId)
+  );
 
-    const displayName =
-      selectedOpponent?.username ||
-      playerNamesCache[selectedOpponentId] ||
-      `Player ${selectedOpponentId}`;
+  const displayName =
+    selectedOpponent?.username ||
+    playerNamesCache[selectedOpponentId] ||
+    `Player ${selectedOpponentId}`;
 
-    const opponents = participants.filter(
-      p => Number(p.player_id) !== Number(currentPlayerId)
-    );
+  const opponents = participants.filter(
+    p => Number(p.player_id) !== Number(currentPlayerId)
+  );
 
-    const isSunk =
-      selectedOpponent &&
-      (selectedOpponent.is_eliminated ||
-        Number(selectedOpponent.ships_remaining) === 0);
-
-    const statusText =
-      currentGameData.status === "playing" && isSunk ? " (SUNK)" : "";
-
-    // 2-player mode
-    if (opponents.length === 1) {
-      opponentLabel.textContent = `${displayName}'s Board`;
-    }
-
-    // 3+ player mode
-    else {
-      opponentLabel.textContent = `Targeting: ${displayName}${statusText}`;
-    }
+  if (opponents.length === 1) {
+    opponentLabel.textContent = `${displayName}'s Board`;
+  } else {
+    opponentLabel.textContent = "Targeting:";
   }
+}
 
   // 5. Show ALL shots fired at selected target, not just your own
   if (selectedOpponentId) {

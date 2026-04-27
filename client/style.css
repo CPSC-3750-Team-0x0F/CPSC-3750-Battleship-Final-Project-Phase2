@@ -1847,19 +1847,17 @@ body.light-mode select option {
 }
 
 .target-selector-header{
-  position:absolute;
-  top:68px;       /* sits under title */
-  left:50%;
-  transform:translateX(-50%);
   display:flex;
+  justify-content:center;
   align-items:center;
-  gap:8px;
-  height:auto;
-  margin:0;
+  gap:10px;
+  height:44px;
+  margin-bottom:12px;
 }
 
 .target-selector-header.hidden{
-  display:none !important;
+  visibility:hidden;
+  pointer-events:none;
 }
 
 .opponent-dropdown{

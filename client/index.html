@@ -136,17 +136,15 @@
       </div>
 
       <div class="board-panel">
-        <h2 id="enemyBoardLabel">Target Board</h2>
+      <div class="target-selector-header">
+        <label id="enemyBoardLabel" for="opponentSelect">Targeting:</label>
 
-        <div class="target-selector-header">
-          <label for="opponentSelect">Targeting:</label>
-
-          <select id="opponentSelect"
-                  class="opponent-dropdown"
-                  onchange="changeSelectedOpponent()">
-            <option value="">No targets available</option>
-          </select>
-        </div>
+        <select id="opponentSelect"
+                class="opponent-dropdown"
+                onchange="changeSelectedOpponent()">
+          <option value="">No targets available</option>
+        </select>
+      </div>
 
         <div id="targetBoard" class="board"></div>
       </div>
