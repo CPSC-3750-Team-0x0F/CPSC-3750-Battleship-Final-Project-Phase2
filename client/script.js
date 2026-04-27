@@ -684,7 +684,7 @@ async function joinGame() {
 
     currentGameId = Number(gameId);
     await refreshPlayerNamesCache();
-    currentTurnOrder = Number(joinData.turn_order ?? 1);
+    currentTurnOrder = Number(joinData.turn_order);
     saveSession();
     showAccountHeader(currentUsername);
     await loadCareerStats();
@@ -775,9 +775,9 @@ async function refreshGameState(silent = false) {
 
   try {
     const [gameRes, movesRes] = await Promise.all([
-      fetch(`${getApiBase()}/games/${currentGameId}`),
-      fetch(`${getApiBase()}/games/${currentGameId}/moves`)
-    ]);
+    fetch(`${getApiBase()}/games/${currentGameId}`, { cache: "no-store" }),
+    fetch(`${getApiBase()}/games/${currentGameId}/moves`, { cache: "no-store" })
+]);
 
     const game = await gameRes.json();
     const moves = await movesRes.json();
@@ -1276,16 +1276,19 @@ function renderBoards() {
     pendingShips.forEach(s => markCell("playerBoard", Number(s.row), Number(s.col), "pending-ship"));
   }
 
-  // FIX: Render shots AT YOU
+  // FIX: Robust Shot Rendering (Your Board)
   const shotsAtMe = moves.filter(m => Number(m.target_id) === Number(currentPlayerId));
   shotsAtMe.forEach(m => {
-    // Normalization: Check result field, then hit boolean
-    const moveResult = m.result ? String(m.result).toLowerCase() : (m.hit ? "hit" : "miss");
+    // Normalization: Check result string, then hit boolean (string or actual bool)
+    let moveResult = "miss";
+    if (m.result === "hit" || m.hit === true || String(m.hit) === "true") {
+      moveResult = "hit";
+    }
     markCell("playerBoard", Number(m.row), Number(m.col), moveResult);
   });
 
   // 3. RENDER THE TARGET BOARD
-  // FIX: Force Number comparison for turn order to prevent 3rd player lock
+  // FIX: Force Number comparison for turn order to prevent player locks
   const isMyTurn = Number(currentTurnOrder) === Number(currentGameData.current_turn_index);
   const canFire = currentGameData.status === "playing" && isMyTurn && selectedOpponentId;
 
@@ -1295,17 +1298,22 @@ function renderBoards() {
     }
   });
 
-  // 4. UPDATE LABELS
+  // 4. UPDATE LABELS & NAME CACHE
   const opponentLabel = document.getElementById("enemyBoardLabel");
   if (selectedOpponentId && opponentLabel) {
     const selectedOpponent = participants.find(p => Number(p.player_id) === Number(selectedOpponentId));
-    const displayName = (selectedOpponent && selectedOpponent.username) || playerNamesCache[selectedOpponentId] || `Player ${selectedOpponentId}`;
-    const isSunk = selectedOpponent && (selectedOpponent.is_eliminated || selectedOpponent.ships_remaining === 0);
+    
+    const displayName = (selectedOpponent && selectedOpponent.username) || 
+                        playerNamesCache[selectedOpponentId] || 
+                        `Player ${selectedOpponentId}`;
+                        
+    const isSunk = selectedOpponent && (selectedOpponent.is_eliminated || Number(selectedOpponent.ships_remaining) === 0);
     const statusText = (currentGameData.status === "playing" && isSunk) ? " (SUNK)" : "";
+    
     opponentLabel.textContent = `Targeting: ${displayName}${statusText}`;
   }
 
-  // 5. RENDER YOUR SHOTS ON CURRENT TARGET
+  // 5. RENDER YOUR SHOTS ON CURRENT TARGET (Target Board)
   if (selectedOpponentId) {
     const myShotsAtThem = moves.filter(m => 
       Number(m.player_id) === Number(currentPlayerId) && 
@@ -1313,7 +1321,11 @@ function renderBoards() {
     );
 
     myShotsAtThem.forEach(m => {
-      const moveResult = m.result ? String(m.result).toLowerCase() : (m.hit ? "hit" : "miss");
+      let moveResult = "miss";
+      if (m.result === "hit" || m.hit === true || String(m.hit) === "true") {
+        moveResult = "hit";
+      }
+      
       markCell("targetBoard", Number(m.row), Number(m.col), moveResult);
       
       const cell = getCell("targetBoard", Number(m.row), Number(m.col));
