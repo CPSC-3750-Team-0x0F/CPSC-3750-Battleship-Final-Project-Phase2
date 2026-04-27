@@ -49,9 +49,11 @@ CREATE TABLE moves (
     move_id SERIAL PRIMARY KEY,
     game_id INTEGER NOT NULL REFERENCES games(game_id) ON DELETE CASCADE,
     player_id INTEGER NOT NULL REFERENCES players(player_id) ON DELETE CASCADE,
+    target_id INTEGER NOT NULL REFERENCES players(player_id) ON DELETE CASCADE,
     row INTEGER NOT NULL,
     col INTEGER NOT NULL,
     result VARCHAR(10) NOT NULL CHECK (result IN ('hit', 'miss')),
     move_timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE (game_id, player_id, row, col)
+    UNIQUE (game_id, player_id, target_id, row, col),
+    CHECK (player_id <> target_id)
 );

@@ -128,14 +128,16 @@ exports.placeShips = async (req, res) => {
 
 exports.fireShot = async (req, res) => {
   const { id } = req.params;
-  const { player_id, row, col } = req.body || {};
+  const { player_id, target_id, row, col } = req.body || {};
 
   if (
     player_id === undefined ||
+    target_id === undefined ||
     row === undefined ||
     col === undefined ||
     !isStrictInt(id) ||
     !isStrictInt(player_id) ||
+    !isStrictInt(target_id) ||
     !isStrictInt(row) ||
     !isStrictInt(col)
   ) {
@@ -147,8 +149,16 @@ exports.fireShot = async (req, res) => {
 
   const gameId = Number(id);
   const shooterId = Number(player_id);
+  const targetId = Number(target_id);
   const shotRow = Number(row);
   const shotCol = Number(col);
+
+  if (shooterId === targetId) {
+    return res.status(400).json({
+      error: "bad_request",
+      message: "cannot fire at yourself"
+    });
+  }
 
   const client = await db.connect();
 
@@ -179,17 +189,27 @@ exports.fireShot = async (req, res) => {
       return res.status(403).json({ error: "forbidden", message: "game not in playing state" });
     }
 
-    const membershipRes = await client.query(
+    const shooterRes = await client.query(
       "SELECT turn_order FROM game_players WHERE game_id = $1 AND player_id = $2",
       [gameId, shooterId]
     );
 
-    if (membershipRes.rows.length === 0) {
+    if (shooterRes.rows.length === 0) {
       await client.query("ROLLBACK");
       return res.status(404).json({ error: "not_found", message: "player not in game" });
     }
 
-    const shooterTurnOrder = Number(membershipRes.rows[0].turn_order);
+    const targetRes = await client.query(
+      "SELECT turn_order FROM game_players WHERE game_id = $1 AND player_id = $2",
+      [gameId, targetId]
+    );
+
+    if (targetRes.rows.length === 0) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ error: "not_found", message: "target player not in game" });
+    }
+
+    const shooterTurnOrder = Number(shooterRes.rows[0].turn_order);
 
     if (shooterTurnOrder !== currentTurnIndex) {
       await client.query("ROLLBACK");
@@ -202,8 +222,17 @@ exports.fireShot = async (req, res) => {
     }
 
     const shotExistsRes = await client.query(
-      "SELECT 1 FROM moves WHERE game_id = $1 AND player_id = $2 AND row = $3 AND col = $4 LIMIT 1",
-      [gameId, shooterId, shotRow, shotCol]
+      `
+      SELECT 1
+      FROM moves
+      WHERE game_id = $1
+        AND player_id = $2
+        AND target_id = $3
+        AND row = $4
+        AND col = $5
+      LIMIT 1
+      `,
+      [gameId, shooterId, targetId, shotRow, shotCol]
     );
 
     if (shotExistsRes.rows.length > 0) {
@@ -216,22 +245,22 @@ exports.fireShot = async (req, res) => {
       SELECT player_id
       FROM ships
       WHERE game_id = $1
-        AND row = $2
-        AND col = $3
-        AND player_id != $4
+        AND player_id = $2
+        AND row = $3
+        AND col = $4
       LIMIT 1
       `,
-      [gameId, shotRow, shotCol, shooterId]
+      [gameId, targetId, shotRow, shotCol]
     );
 
-    const hitOpponentId =
-      hitRes.rows.length > 0 ? Number(hitRes.rows[0].player_id) : null;
-
-    const result = hitOpponentId !== null ? "hit" : "miss";
+    const result = hitRes.rows.length > 0 ? "hit" : "miss";
 
     await client.query(
-      "INSERT INTO moves (game_id, player_id, row, col, result) VALUES ($1, $2, $3, $4, $5)",
-      [gameId, shooterId, shotRow, shotCol, result]
+      `
+      INSERT INTO moves (game_id, player_id, target_id, row, col, result)
+      VALUES ($1, $2, $3, $4, $5, $6)
+      `,
+      [gameId, shooterId, targetId, shotRow, shotCol, result]
     );
 
     await client.query(
@@ -266,10 +295,10 @@ exports.fireShot = async (req, res) => {
             SELECT 1
             FROM moves m
             WHERE m.game_id = s.game_id
+              AND m.target_id = s.player_id
               AND m.row = s.row
               AND m.col = s.col
               AND m.result = 'hit'
-              AND m.player_id != s.player_id
           )
         `,
         [gameId, p.player_id]
@@ -307,10 +336,13 @@ exports.fireShot = async (req, res) => {
         [gameId, winnerId]
       );
     } else {
-      const currentIdx = players.findIndex((p) => p.turn_order === currentTurnIndex);
-      const nextIdx = (currentIdx + 1) % players.length;
-      const nextTurnIndex = players[nextIdx].turn_order;
-      next_player_id = players[nextIdx].player_id;
+      const aliveIdx = alivePlayers.findIndex(
+        (p) => p.turn_order === currentTurnIndex
+      );
+
+      const nextIdx = (aliveIdx + 1) % alivePlayers.length;
+      const nextTurnIndex = alivePlayers[nextIdx].turn_order;
+      next_player_id = alivePlayers[nextIdx].player_id;
 
       await client.query(
         "UPDATE games SET current_turn_index = $1 WHERE game_id = $2",
@@ -322,6 +354,7 @@ exports.fireShot = async (req, res) => {
 
     return res.status(200).json({
       result,
+      target_id: targetId,
       next_player_id,
       game_status: gameStatus,
       winner_id: winnerId
@@ -330,6 +363,7 @@ exports.fireShot = async (req, res) => {
     try {
       await client.query("ROLLBACK");
     } catch (_) {}
+
     console.error("fireShot error:", err);
     return res.status(500).json({ error: "server_error", message: "database error" });
   } finally {
@@ -346,18 +380,25 @@ exports.getMoves = async (req, res) => {
 
   try {
     const gameRes = await db.query("SELECT 1 FROM games WHERE game_id = $1", [Number(id)]);
+
     if (gameRes.rows.length === 0) {
       return res.status(404).json({ error: "not_found", message: "game not found" });
     }
 
     const result = await db.query(
-      "SELECT player_id, row, col, result, move_timestamp FROM moves WHERE game_id = $1 ORDER BY move_id ASC",
+      `
+      SELECT player_id, target_id, row, col, result, move_timestamp
+      FROM moves
+      WHERE game_id = $1
+      ORDER BY move_id ASC
+      `,
       [Number(id)]
     );
 
     return res.status(200).json(
       result.rows.map((row) => ({
         player_id: Number(row.player_id),
+        target_id: Number(row.target_id),
         row: Number(row.row),
         col: Number(row.col),
         result: row.result,

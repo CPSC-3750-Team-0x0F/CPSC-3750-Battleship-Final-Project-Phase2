@@ -716,7 +716,12 @@ function buildBoard(elementId, clickable = false, onCellClick = null) {
     cell.dataset.col = col;
 
     if (clickable && onCellClick) {
-      cell.classList.add(elementId === "enemyBoard" ? "targetable" : "placeable");
+      cell.classList.add(
+        elementId === "enemyBoard" || elementId === "targetBoard"
+          ? "targetable"
+          : "placeable"
+      );
+
       cell.addEventListener("click", () => onCellClick(row, col));
 
       if (elementId === "playerBoard") {
