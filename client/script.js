@@ -1671,8 +1671,8 @@ function updateOpponentDropdown(participants) {
         `${opponents[0].username || `Player ${selectedOpponentId}`}'s Board`;
     }
 
-    // hide only dropdown, NOT the whole label row
-    select.style.display = "none";
+    // hide the entire targeting row in 2-player
+    if (selectorHeader) selectorHeader.classList.add("hidden");
 
     return;
   }
