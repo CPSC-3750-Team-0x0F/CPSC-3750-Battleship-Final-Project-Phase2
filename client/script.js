@@ -6,8 +6,7 @@ const TEAM_SERVERS = {
     anthony: "https://cpsc-3750-battleship-final-project-phase2.onrender.com"
 };
 
-// 1. Determine the correct default based on the current host
-let default_choice = TEAM_SERVERS.christian; // Default fallback
+let default_choice = TEAM_SERVERS.christian; // Fallback
 
 if (host.includes('anthonyfrial')) {
     default_choice = TEAM_SERVERS.anthony;
@@ -16,11 +15,10 @@ else if (host.includes('christianjohnston.dev')) {
     default_choice = TEAM_SERVERS.christian;
 }
 
-// 2. Initialize SERVER_BASE
+// Initialize SERVER_BASE
 let savedServer = localStorage.getItem("battleship_server_url");
 
-// 3. Logic Gate: Only use localStorage if it's NOT just the frontend domain
-// This prevents christianjohnston.dev from being used as an API endpoint
+// Safeguard: If the saved server is actually a frontend domain, ignore it
 if (savedServer && !savedServer.includes('christianjohnston.dev') && !savedServer.includes('anthonyfrial')) {
     SERVER_BASE = savedServer;
 } else {
@@ -1744,4 +1742,10 @@ async function refreshPlayerNamesCache() {
   } catch (err) {
     console.error("Failed to fetch player names:", err);
   }
+}
+
+function resetToTeamDefault() {
+    // This uses the 'default_choice' we calculated at the top of the script
+    selectServerFromList(default_choice);
+    setServerStatus("Reset to team default", "success");
 }
