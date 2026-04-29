@@ -6,19 +6,26 @@ const TEAM_SERVERS = {
     anthony: "https://cpsc-3750-battleship-final-project-phase2.onrender.com"
 };
 
-// Default choice
-let default_choice = TEAM_SERVERS.christian;
+// 1. Determine the correct default based on the current host
+let default_choice = TEAM_SERVERS.christian; // Default fallback
 
-// If it's Anthony's site, swap to his server
-if (host.includes('anthonyfrialde')) {
+if (host.includes('anthonyfrial')) {
     default_choice = TEAM_SERVERS.anthony;
 } 
-// If it's your custom domain, it stays as christian
 else if (host.includes('christianjohnston.dev')) {
     default_choice = TEAM_SERVERS.christian;
 }
 
-let SERVER_BASE = localStorage.getItem("battleship_server_url") || default_choice;
+// 2. Initialize SERVER_BASE
+let savedServer = localStorage.getItem("battleship_server_url");
+
+// 3. Logic Gate: Only use localStorage if it's NOT just the frontend domain
+// This prevents christianjohnston.dev from being used as an API endpoint
+if (savedServer && !savedServer.includes('christianjohnston.dev') && !savedServer.includes('anthonyfrial')) {
+    SERVER_BASE = savedServer;
+} else {
+    SERVER_BASE = default_choice;
+}
 
 let playerNamesCache = {};
 let currentPlayerId = null;
